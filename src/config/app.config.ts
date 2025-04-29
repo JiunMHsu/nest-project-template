@@ -58,7 +58,7 @@ const appConfig: ConfigFactory<IAppConfig> = () => ({
         port: parseInt(process.env.DB_PORT || '5432', 10),
         username: process.env.DB_USER || 'postgres',
         password: process.env.DB_PASSWORD || 'postgres',
-        name: process.env.DB_NAME || 'orionfin_advisor_db',
+        name: process.env.DB_NAME || 'nest_db',
         log: parseBool(process.env.DB_LOGGING, false),
         autoloadEntities: parseBool(process.env.DB_AUTOLOAD_ENTITIES, false),
         sync: parseBool(process.env.DB_SYNC, false),
