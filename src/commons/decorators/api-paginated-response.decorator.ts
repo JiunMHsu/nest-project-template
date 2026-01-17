@@ -1,0 +1,16 @@
+import { applyDecorators, Type } from '@nestjs/common';
+import { ApiOkResponse, getSchemaPath } from '@nestjs/swagger';
+import { PageResponse } from '@commons/querying/page.response';
+
+export const ApiPaginatedResponse = <TModel extends Type>(model: TModel) => {
+    return applyDecorators(
+        ApiOkResponse({
+            schema: {
+                allOf: [
+                    { $ref: getSchemaPath(PageResponse) },
+                    { properties: { data: { type: 'array', items: { $ref: getSchemaPath(model) } } } },
+                ],
+            },
+        }),
+    );
+};

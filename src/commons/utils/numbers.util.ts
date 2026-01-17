@@ -26,3 +26,15 @@ export const roundToTwoDecimals = (num: number): number => {
     if (num === null || num === undefined) throw new Error('Invalid number');
     return roundTo(num, 2);
 };
+
+/**
+ * Generates a sequence of numbers from start to end (inclusive).
+ *
+ * @param start
+ * @param end
+ */
+export const sequence = (start: number, end: number): number[] => {
+    const result: number[] = [];
+    for (let i = start; i <= end; i++) result.push(i);
+    return result;
+};

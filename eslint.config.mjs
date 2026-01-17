@@ -1,16 +1,14 @@
 // @ts-check
 import eslint from '@eslint/js';
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
     {
-        ignores: ['eslint.config.mjs'],
+        ignores: ['eslint.config.mjs', 'dist', 'node_modules', 'coverage'],
     },
     eslint.configs.recommended,
     ...tseslint.configs.recommendedTypeChecked,
-    eslintPluginPrettierRecommended,
     {
         languageOptions: {
             globals: {
@@ -27,9 +25,18 @@ export default tseslint.config(
     },
     {
         rules: {
+            'require-await': 'off',
             '@typescript-eslint/no-explicit-any': 'off',
             '@typescript-eslint/no-floating-promises': 'off',
             '@typescript-eslint/no-unsafe-argument': 'warn',
+            '@typescript-eslint/no-unused-vars': [
+                'error',
+                {
+                    varsIgnorePattern: '^__',
+                    argsIgnorePattern: '^__',
+                },
+            ],
+            // 'prettier/prettier': ['error', { endOfLine: 'auto' }],
         },
     },
 );

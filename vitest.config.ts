@@ -1,18 +1,29 @@
 import swc from 'unplugin-swc';
-import { defineConfig } from 'vitest/config';
-import { createVitestTestConfig } from './vitest.config.builder';
-import * as path from 'node:path';
+import { defineConfig, ViteUserConfig } from 'vitest/config';
+import path from 'path';
 
-export default defineConfig({
-    test: createVitestTestConfig('(unit|e2e)'),
-    plugins: [swc.vite()],
-    resolve: {
-        alias: {
-            '@src': path.resolve(__dirname, './src'),
-            '@config': path.resolve(__dirname, './src/config'),
-            '@commons': path.resolve(__dirname, './src/commons'),
-            '@modules': path.resolve(__dirname, './src/modules'),
-            '@database': path.resolve(__dirname, './src/database'),
+const createVitestTestConfig = (testingType: string): ViteUserConfig => {
+    return defineConfig({
+        test: {
+            root: './',
+            globals: true,
+            isolate: false,
+            passWithNoTests: true,
+            include: [`test/${testingType}/**/*.spec.ts`],
+            pool: 'forks',
         },
-    },
-});
+        plugins: [swc.vite()],
+        resolve: {
+            alias: {
+                '@test': path.resolve(__dirname, './test'),
+                '@src': path.resolve(__dirname, './src'),
+                '@commons': path.resolve(__dirname, './src/commons'),
+                '@core': path.resolve(__dirname, './src/core'),
+                '@external': path.resolve(__dirname, './src/external'),
+                '@modules': path.resolve(__dirname, './src/modules'),
+            },
+        },
+    });
+};
+
+export default createVitestTestConfig;

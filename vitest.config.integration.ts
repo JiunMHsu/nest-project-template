@@ -1,3 +1,3 @@
 import createVitestTestConfig from './vitest.config';
 
-export default createVitestTestConfig('unit');
+export default createVitestTestConfig('integration');

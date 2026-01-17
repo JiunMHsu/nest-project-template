@@ -1,12 +1,12 @@
-import { Controller, Get, HttpCode, Inject, Logger } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Logger } from '@nestjs/common';
 
 @Controller('health')
 export class HealthController {
-    constructor(@Inject(Logger) private readonly logger: Logger) {}
+    private readonly logger = new Logger(HealthController.name);
 
     @Get()
-    @HttpCode(200)
-    run() {
+    @HttpCode(HttpStatus.OK)
+    public run(): { status: string } {
         this.logger.log('Health endpoint called');
         return { status: 'ok' };
     }

@@ -1,41 +1,40 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Logger } from '@nestjs/common';
-import { cors } from '@commons/constants';
+import { Logger, ValidationError, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { SeederService } from '@database/seeder/seeder.service';
 import { ConfigService } from '@nestjs/config';
+import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
+
     const configService = app.get(ConfigService);
+    const cors: CorsOptions = {
+        origin: configService.get<string[]>('corsOrigins'),
+        methods: 'GET, HEAD, POST, PUT, PATCH, DELETE',
+        credentials: true,
+    };
 
     app.enableCors(cors);
     app.setGlobalPrefix('api');
 
-    const _host = configService.get<string>('host');
-    const _port = configService.get<number>('port');
+    const exceptionFactory = (errors: ValidationError[]) => {
+        // Customize error handling further if needed
+        return new Error(`Validation failed: ${errors.map(e => Object.values(e.constraints).join(', ')).join('; ')}`);
+    };
+    app.useGlobalPipes(new ValidationPipe({ transform: true, exceptionFactory }));
 
-    const config = new DocumentBuilder()
-        .setTitle('Nest REST API Template')
-        .setVersion('1.0')
-        .build();
+    const document = new DocumentBuilder().setTitle('Nest REST API Template').setVersion('1.0').build();
+    SwaggerModule.setup('docs', app, () => SwaggerModule.createDocument(app, document));
 
-    SwaggerModule.setup('docs', app, () =>
-        SwaggerModule.createDocument(app, config),
-    );
+    const host = configService.get<string>('host');
+    const port = configService.get<number>('port');
 
-    const seedDatabase = configService.get<boolean>('seedDatabase');
-    if (seedDatabase) {
-        const seedService = app.get(SeederService);
-        await seedService.seed();
-    }
+    await app.listen(port, host);
 
-    await app.listen(_port, _host);
-
-    const logger = app.get(Logger);
-    logger.log(`Server running on http://${_host}:${_port}`);
-    logger.log(`See documentation on http://${_host}:${_port}/docs`);
+    const logger = new Logger('Bootstrap');
+    logger.log(`Server running on http://${host}:${port}`);
+    logger.log(`See documentation on http://${host}:${port}/docs`);
 }
 
 bootstrap().then();
