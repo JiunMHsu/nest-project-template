@@ -15,12 +15,12 @@ const createVitestTestConfig = (testingType: string): ViteUserConfig => {
         plugins: [swc.vite()],
         resolve: {
             alias: {
-                '@test': path.resolve(__dirname, './test'),
                 '@src': path.resolve(__dirname, './src'),
                 '@commons': path.resolve(__dirname, './src/commons'),
-                '@core': path.resolve(__dirname, './src/core'),
-                '@external': path.resolve(__dirname, './src/external'),
-                '@modules': path.resolve(__dirname, './src/modules'),
+                '@infrastructure': path.resolve(__dirname, './src/infrastructure'),
+                '@integrations': path.resolve(__dirname, './src/integrations'),
+                '@features': path.resolve(__dirname, './src/features'),
+                '@test': path.resolve(__dirname, './test'),
             },
         },
     });

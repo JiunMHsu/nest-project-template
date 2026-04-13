@@ -21,11 +21,11 @@
         "paths": {
             "@src/*": ["src/*"],
             "@commons/*": ["src/commons/*"],
-            "@config/*": ["src/config/*"],
-            "@core/*": ["src/core/*"],
-            "@database/*": ["src/database/*"],
-            "@external/*": ["src/external/*"],
-            "@modules/*": ["src/modules/*"],
+            "@infrastructure/*": ["src/infrastructure/*"],
+            "@config/*": ["src/infrastructure/config/*"],
+            "@database/*": ["src/infrastructure/database/*"],
+            "@integrations/*": ["src/integrations/*"],
+            "@features/*": ["src/features/*"],
             "@test/*": ["test/*"]
         }
     }

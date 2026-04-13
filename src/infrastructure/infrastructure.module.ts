@@ -1,9 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { configuration } from '@core/config/app.config';
-import { LoggerModule } from '@core/logger/logger.module';
-import { DatabaseModule } from '@core/database/database.module';
-import { SeederModule } from '@core/seeder/seeder.module';
+import { configuration } from '@infrastructure/config/app.config';
+import { LoggerModule } from '@infrastructure/logger/logger.module';
+// import { DatabaseModule } from '@infrastructure/database/database.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 
@@ -19,8 +18,7 @@ import { ScheduleModule } from '@nestjs/schedule';
         ScheduleModule.forRoot(),
 
         LoggerModule,
-        DatabaseModule,
-        SeederModule,
+        // DatabaseModule,
     ],
 })
-export class CoreModule {}
+export class InfrastructureModule {}

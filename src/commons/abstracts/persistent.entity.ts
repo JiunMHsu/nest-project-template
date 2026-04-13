@@ -10,6 +10,10 @@ export abstract class PersistentEntity {
     @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
     public updatedAt: Date;
 
-    @Column('boolean', { name: 'is_active', default: true, nullable: false })
-    public isActive: boolean;
+    @Column('timestamp', { name: 'deleted_at', nullable: true })
+    public deletedAt: Date | null;
+
+    public isActive(): boolean {
+        return !this.deletedAt;
+    }
 }
