@@ -1,14 +1,14 @@
 // @ts-check
 import eslint from '@eslint/js';
 import globals from 'globals';
-import tseslint from 'typescript-eslint';
+import TSEslint from 'typescript-eslint';
 
-export default tseslint.config(
+export default TSEslint.config(
     {
         ignores: ['eslint.config.mjs', 'dist', 'node_modules', 'coverage'],
     },
     eslint.configs.recommended,
-    ...tseslint.configs.recommendedTypeChecked,
+    ...TSEslint.configs.recommendedTypeChecked,
     {
         languageOptions: {
             globals: {

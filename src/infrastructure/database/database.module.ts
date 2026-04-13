@@ -10,6 +10,7 @@ import { SeederModule } from './seeder/seeder.module';
             imports: [ConfigModule],
             useClass: PostgresConfigService,
         }),
+
         SeederModule,
     ],
     providers: [PostgresConfigService],

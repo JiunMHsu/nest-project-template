@@ -2,10 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Provider } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { configuration } from '@core/config/app.config';
+import { configuration } from '@config/app.config';
 import { EntityClassOrSchema } from '@nestjs/typeorm/dist/interfaces/entity-class-or-schema.type';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { PostgresConfigService } from '@core/database/postgres/postgres-config.service';
+import { PostgresConfigService } from '@database/postgres/postgres-config.service';
 import { DiscoveryModule } from '@nestjs/core';
 
 export async function createIntegrationTestModule(
