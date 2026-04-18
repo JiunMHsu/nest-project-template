@@ -4,6 +4,18 @@ import { validateOrReject } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { ParsedQs } from 'qs';
 
+/**
+ * Converts comma-separated string values in a parsed query string into arrays.
+ *
+ * Only top-level string values are split — nested objects are passed through unchanged.
+ *
+ * @example
+ * parseCommaSeparatedArrays({ tags: 'node,typescript,nestjs' })
+ * // → { tags: ['node', 'typescript', 'nestjs'] }
+ *
+ * parseCommaSeparatedArrays({ name: 'john' })
+ * // → { name: 'john' }  (no comma — left as-is)
+ */
 export function parseCommaSeparatedArrays(parsedQs: ParsedQs): ParsedQs {
     const result: ParsedQs = {};
     const separator = ',';
@@ -39,4 +51,18 @@ async function queryToDto<T>(dtoClass: new () => T, ctx: ExecutionContext): Prom
     return dtoInstance;
 }
 
+/**
+ * Param decorator that parses, transforms, and validates HTTP query parameters
+ * into a typed DTO class.
+ *
+ * Comma-separated string values are automatically split into arrays before
+ * transformation. Validation is performed via `class-validator`; invalid
+ * parameters throw a `BadRequestException` (HTTP 400).
+ *
+ * @example
+ * ```typescript
+ * @Get()
+ * findAll(@QueryParams() filter: ItemFilterDto) { ... }
+ * ```
+ */
 export const QueryParams = createParamDecorator(queryToDto);

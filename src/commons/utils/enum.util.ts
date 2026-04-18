@@ -1,14 +1,21 @@
 import { z } from 'zod';
 
 /**
- * Gets the enum's value by string.
+ * Looks up a string-based enum value by its string representation.
  *
- * @template T Enum type (string-based).
- * @param enumObj The enum object to search in.
- * @param value The value to look for in the enum.
- * @returns {T[keyof T] | undefined} The corresponding enum value if found, otherwise `undefined`.
+ * Returns `undefined` when the string doesn't match any enum value,
+ * making it safe to use in validation/mapping contexts without throwing.
  *
- * @throws {Error} If the provided value is not a valid string.
+ * @param enumObj The enum object to search.
+ * @param value   The string to look up.
+ * @returns The matching enum value, or `undefined` if not found.
+ *
+ * @example
+ * enum Status { Active = 'active', Inactive = 'inactive' }
+ *
+ * getEnumValueByString(Status, 'active')   // → 'active'
+ * getEnumValueByString(Status, 'ACTIVE')   // → undefined  (case-sensitive)
+ * getEnumValueByString(Status, undefined)  // → undefined
  */
 export function getEnumValueByString<T extends Record<string, string>>(
     enumObj: T,
@@ -25,13 +32,18 @@ export function getEnumValueByString<T extends Record<string, string>>(
 }
 
 /**
- * Converts a value from one enum to another based on matching string values.
+ * Converts a value from one string-based enum to another by matching on
+ * the string value.
  *
- * @template T Source enum type (string-based).
- * @template U Target enum type (string-based).
- * @param sourceValue The value from the source enum to convert.
- * @param targetEnum The target enum object to convert to.
- * @returns {U[keyof U] | undefined} The corresponding value in the target enum if found, otherwise `undefined`.
+ * Returns `undefined` when no matching value exists in the target enum.
+ * Useful for mapping between internal and external representations of the
+ * same concept when the string values happen to be equal.
+ *
+ * @example
+ * enum Source { Active = 'ACTIVE' }
+ * enum Target { Active = 'ACTIVE', Inactive = 'INACTIVE' }
+ *
+ * convertEnum(Source.Active, Target) // → 'ACTIVE'
  */
 export function convertEnum<T extends Record<string, string>, U extends Record<string, string>>(
     sourceValue: T[keyof T],

@@ -1,13 +1,22 @@
 /**
- * Update entity with partial updates
- * It skips undefined values and, by default, null values
+ * Applies partial updates to an entity, skipping `undefined` values and,
+ * by default, `null` values.
  *
- * @param entity The entity to update
- * @param updates The partial updates
- * @param option Options for updating
- * @param option.allowNull List of keys that allow null values to be set
+ * This is useful in PATCH handlers where only the fields explicitly provided
+ * by the caller should be updated, and `null` should only be written when
+ * the field is intentionally nullable (e.g. clearing a foreign key).
  *
- * @returns The updated entity
+ * @param entity  The entity to mutate.
+ * @param updates Partial updates to apply.
+ * @param option.allowNull Fields that are permitted to be set to `null`.
+ * @returns The same (mutated) entity reference.
+ *
+ * @example
+ * updateEntity(user, { name: 'Jane', phone: undefined });
+ * // name is updated, phone is skipped
+ *
+ * updateEntity(user, { email: null }, { allowNull: ['email'] });
+ * // email is explicitly cleared to null
  */
 export function updateEntity<T>(
     entity: T,

@@ -9,6 +9,20 @@ interface FilterCondition {
     operator: '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE' | 'IN' | 'NONE';
 }
 
+/**
+ * Fluent query builder wrapping TypeORM's `SelectQueryBuilder`.
+ *
+ * Adds field whitelisting, null-aware filter methods, automatic soft-delete
+ * filtering (`deletedAt IS NULL`), sorting, and pagination — all via a
+ * chainable API that keeps repository code readable.
+ *
+ * @example
+ * const results = await new QueryBuilder(repo.createQueryBuilder('u'), 'u', sorting.getCriteria())
+ *   .equals('u.status', status)
+ *   .contains('u.name', search)
+ *   .between('u.createdAt', createdAfter, createdBefore)
+ *   .getPage(paging);
+ */
 export class QueryBuilder<T> {
     private readonly alias: string;
     private readonly ormQueryBuilder: SelectQueryBuilder<T>;
@@ -19,6 +33,12 @@ export class QueryBuilder<T> {
 
     private sortCriteria: SortCriterion[];
 
+    /**
+     * @param ormQueryBuilder - TypeORM query builder to wrap.
+     * @param alias - Entity alias used in the query (must match the one passed to `createQueryBuilder`).
+     * @param sortCriteria - Sort criteria, typically from `SortRequest.getCriteria()`.
+     * @param allowedFields - Whitelist of field names that may be filtered. Empty means all fields allowed.
+     */
     public constructor(
         ormQueryBuilder: SelectQueryBuilder<T>,
         alias: string,
@@ -49,6 +69,10 @@ export class QueryBuilder<T> {
         throw new Error(`Field "${field}" is not allowed for filtering`);
     }
 
+    /**
+     * Filters where `field = value`. Skipped when value is `undefined`.
+     * Null values produce `field IS NULL`.
+     */
     public equals(field: string, value: unknown): this {
         if (!this.isPresent(value, { allowNull: true })) return this;
 
@@ -57,6 +81,10 @@ export class QueryBuilder<T> {
         return this;
     }
 
+    /**
+     * Filters where `field != value`. Skipped when value is `undefined`.
+     * Null values produce `field IS NOT NULL`.
+     */
     public notEquals(field: string, value: unknown): this {
         if (!this.isPresent(value, { allowNull: true })) return this;
 
@@ -65,6 +93,9 @@ export class QueryBuilder<T> {
         return this;
     }
 
+    /**
+     * Filters where `field > value`. Skipped when value is `undefined` or `null`.
+     */
     public greaterThan(field: string, value: number | Date): this {
         this.validateField(field);
         if (!this.isPresent(value)) return this;
@@ -73,6 +104,9 @@ export class QueryBuilder<T> {
         return this;
     }
 
+    /**
+     * Filters where `field < value`. Skipped when value is `undefined` or `null`.
+     */
     public lessThan(field: string, value: number | Date): this {
         this.validateField(field);
         if (!this.isPresent(value)) return this;
@@ -81,6 +115,9 @@ export class QueryBuilder<T> {
         return this;
     }
 
+    /**
+     * Filters where `field >= value`. Skipped when value is `undefined` or `null`.
+     */
     public greaterThanOrEqual(field: string, value: number | Date): this {
         this.validateField(field);
         if (!this.isPresent(value)) return this;
@@ -89,6 +126,9 @@ export class QueryBuilder<T> {
         return this;
     }
 
+    /**
+     * Filters where `field <= value`. Skipped when value is `undefined` or `null`.
+     */
     public lessThanOrEqual(field: string, value: number | Date): this {
         this.validateField(field);
         if (!this.isPresent(value)) return this;
@@ -99,7 +139,7 @@ export class QueryBuilder<T> {
 
     /**
      * Raw LIKE filter. The caller controls the pattern, including wildcard placement.
-     * Use contains(), startsWith(), or endsWith() for common patterns.
+     * Use `contains()`, `startsWith()`, or `endsWith()` for common patterns with automatic escaping.
      *
      * @example
      * .like('name', 'Jo%n')   // matches "John", "Joan", etc.
@@ -113,6 +153,13 @@ export class QueryBuilder<T> {
         return this;
     }
 
+    /**
+     * Filters where `field` starts with `pattern`.
+     * LIKE special characters (`%`, `_`) in the pattern are automatically escaped.
+     *
+     * @example
+     * .startsWith('name', 'Jo') // matches "John", "José", etc.
+     */
     public startsWith(field: string, pattern: string): this {
         this.validateField(field);
         if (!this.isPresent(pattern)) return this;
@@ -122,6 +169,13 @@ export class QueryBuilder<T> {
         return this;
     }
 
+    /**
+     * Filters where `field` ends with `pattern`.
+     * LIKE special characters (`%`, `_`) in the pattern are automatically escaped.
+     *
+     * @example
+     * .endsWith('email', '@example.com')
+     */
     public endsWith(field: string, pattern: string): this {
         this.validateField(field);
         if (!this.isPresent(pattern)) return this;
@@ -131,6 +185,13 @@ export class QueryBuilder<T> {
         return this;
     }
 
+    /**
+     * Filters where `field` contains `pattern` (case-sensitive, database-collation dependent).
+     * LIKE special characters (`%`, `_`) in the pattern are automatically escaped.
+     *
+     * @example
+     * .contains('description', '50% off') // safely escaped — won't treat % as a wildcard
+     */
     public contains(field: string, pattern: string): this {
         this.validateField(field);
         if (!this.isPresent(pattern)) return this;
@@ -140,14 +201,19 @@ export class QueryBuilder<T> {
         return this;
     }
 
+    /**
+     * Filters where `field` matches any value in `values`.
+     *
+     * - `undefined` or `null` → condition is skipped.
+     * - Empty array → adds `1=0` so the query returns no rows, instead of silently
+     *   dropping the filter and returning all records.
+     */
     public in(field: string, values: unknown[]): this {
         if (!values) return this;
 
         this.validateField(field);
 
         if (values.length === 0) {
-            // Empty set — no rows can match. Adds 1=0 to produce zero results
-            // rather than silently dropping the filter and returning all records.
             this.conditions.push({ field, value: null, operator: 'NONE' });
             return this;
         }
@@ -156,16 +222,31 @@ export class QueryBuilder<T> {
         return this;
     }
 
+    /**
+     * Shorthand for combining `greaterThanOrEqual` and `lessThanOrEqual`.
+     * Either bound may be omitted — only the provided ones are applied.
+     *
+     * @example
+     * .between('price', 10, 50)           // 10 <= price <= 50
+     * .between('createdAt', startDate)    // createdAt >= startDate (no upper bound)
+     */
     public between(field: string, from?: number | Date, to?: number | Date): this {
         if (this.isPresent(from)) this.greaterThanOrEqual(field, from);
         if (this.isPresent(to)) this.lessThanOrEqual(field, to);
         return this;
     }
 
+    /**
+     * Executes the query and returns all matching entities (no pagination).
+     */
     public getMany(): Promise<T[]> {
         return this.apply().getMany();
     }
 
+    /**
+     * Executes the query and returns a paginated result.
+     * Defaults to page 0, size 20 when no `PageRequest` is provided.
+     */
     public async getPage(paging?: PageRequest): Promise<PageResponse<T>> {
         paging = paging ?? new PageRequest();
         const { page: pageNumber, offset, size } = paging;

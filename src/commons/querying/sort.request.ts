@@ -9,6 +9,14 @@ export interface SortCriterion {
     direction: SortDirection;
 }
 
+/**
+ * Holds validated sort criteria parsed from query parameters.
+ *
+ * Fields are stored in a `Map`, so adding the same field twice simply
+ * overwrites its direction — no duplicates.
+ *
+ * Typically consumed by passing `sortRequest.getCriteria()` to `QueryBuilder`.
+ */
 export class SortRequest {
     private readonly options: Map<string, SortDirection>;
 
@@ -16,10 +24,12 @@ export class SortRequest {
         this.options = new Map<string, SortDirection>();
     }
 
+    /** Adds or updates a sort criterion for the given field. */
     public addCriterion(field: string, direction: SortDirection): void {
         this.options.set(field, direction);
     }
 
+    /** Returns all sort criteria in insertion order. */
     public getCriteria(): SortCriterion[] {
         const result: SortCriterion[] = [];
         this.options.forEach((direction, field) => {
@@ -76,21 +86,24 @@ function queryToSortRequest(validKeys: string[], ctx: ExecutionContext): SortReq
 }
 
 /**
- * Decorator to extract sorting criteria from query parameters.
+ * Param decorator that parses and validates sort criteria from the `sortBy` query parameter.
  *
- * Usage:
+ * Accepts one or more `sortBy` values in the format `field,direction` where direction
+ * defaults to `ASC` if omitted. The fields `id`, `createdAt`, and `updatedAt` are always
+ * allowed in addition to those explicitly provided.
  *
- * ```TypeScript
+ * Throws `BadRequestException` (HTTP 400) if an unrecognised field is requested.
+ *
+ * @param validFields - Additional field names allowed for sorting (plain names only, no dot paths).
+ *
+ * @example
+ * ```typescript
+ * // GET /items?sortBy=name,ASC&sortBy=createdAt,DESC
  * @Get()
- * public async findAll(@Sorting(['name', 'email']) sorting: SortRequest) {
- *     // Use sorting criteria
+ * findAll(@Sorting(['name', 'status']) sorting: SortRequest) {
+ *   const criteria = sorting.getCriteria();
+ *   // [{ field: 'name', direction: 'ASC' }, { field: 'createdAt', direction: 'DESC' }]
  * }
- * ```
- *
- * The valid key array only accepts plain field names, no nested paths.
- *
- * ```TypeScript
- * @Sorting(['name.firstName', 'address.city']) // Invalid
  * ```
  */
 export const Sorting = createParamDecorator(queryToSortRequest);

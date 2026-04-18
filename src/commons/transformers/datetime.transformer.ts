@@ -3,8 +3,28 @@ import { DateTime } from 'luxon';
 import { APP_TIMEZONE } from '@commons/constants/timezone';
 
 /**
- * Transforms incoming date strings from Buenos Aires timezone to UTC Date object
- * Date strings are expected to be in ISO 8601 format. E.g., "2024-12-31T15:00:00"
+ * `class-transformer` property decorator that converts an incoming date string
+ * from Buenos Aires local time to a UTC `Date` object.
+ *
+ * Input strings must be in ISO 8601 format **without** timezone information
+ * (e.g. `"2024-12-31T15:00:00"`). The value is interpreted as Buenos Aires
+ * local time and then converted to UTC.
+ *
+ * - `undefined` / `null` / empty string → `undefined`
+ * - Existing `Date` object → returned as-is (assumed UTC)
+ * - String with timezone suffix (`Z`, `+HH:MM`, `-HH:MM`) → throws
+ * - Invalid format → throws
+ *
+ * @example
+ * ```typescript
+ * class FilterDto {
+ *   @TransformToUTC()
+ *   @IsOptional()
+ *   createdAfter?: Date;
+ * }
+ * // Query: ?createdAfter=2024-07-01T09:00:00
+ * // Result: createdAfter = 2024-07-01T12:00:00.000Z  (UTC-3 → UTC)
+ * ```
  */
 export function TransformToUTC() {
     return Transform(({ value }: { value: string | Date | undefined }): Date | undefined => {

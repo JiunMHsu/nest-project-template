@@ -2,6 +2,14 @@ import { randomBytes } from 'crypto';
 
 type Characters = 'uppercase' | 'lowercase' | 'digits' | 'specialChars';
 
+/**
+ * Generates random strings of various character compositions.
+ *
+ * `generateSecure()` uses Node's `crypto.randomBytes()` and is safe for
+ * tokens, temporary passwords, and other security-sensitive values.
+ * All other methods use `Math.random()` and are suitable for non-security
+ * purposes such as test data or display IDs.
+ */
 export class RandomString {
     private static DEFAULT_LENGTH = 16;
 
@@ -28,12 +36,13 @@ export class RandomString {
     }
 
     /**
-     * Generates a random string.
+     * Generates a random string using the specified character sets.
      *
-     * @param options - Options for generating the string.
-     * @param options.with - Character sets to include (default: ['uppercase', 'lowercase']).
-     * @param options.length - Length of the generated string (default: 16).
-     * @returns A random string.
+     * Defaults to uppercase + lowercase letters, length 16.
+     *
+     * @example
+     * RandomString.generate() // → "KmLpQwErtYuIoPaS"
+     * RandomString.generate({ with: ['digits'], length: 6 }) // → "482957"
      */
     public static generate(options?: { with?: Characters[]; length?: number }): string {
         const length = options?.length ?? this.DEFAULT_LENGTH;
@@ -42,6 +51,16 @@ export class RandomString {
         return this._generate(seeds, length);
     }
 
+    /**
+     * Generates a cryptographically secure random string using all character
+     * sets (uppercase, lowercase, digits, special characters).
+     *
+     * Uses `crypto.randomBytes()` — safe for tokens, temporary passwords,
+     * and other security-sensitive values.
+     *
+     * @example
+     * RandomString.generateSecure(32) // → "aB3$kL9@mN2#pQ5&xY8!zW4^vR7*cT1!"
+     */
     public static generateSecure(length?: number): string {
         const _length = length ?? this.DEFAULT_LENGTH;
         if (_length <= 0) return '';
@@ -55,14 +74,32 @@ export class RandomString {
         return result;
     }
 
+    /**
+     * Generates a random string containing only ASCII letters (upper and lowercase).
+     *
+     * @example
+     * RandomString.generateAlphabetic(10) // → "KmLpQwErTy"
+     */
     public static generateAlphabetic(length?: number): string {
         return this._generate(['uppercase', 'lowercase'], length);
     }
 
+    /**
+     * Generates a random string containing ASCII letters and digits (no special characters).
+     *
+     * @example
+     * RandomString.generateAlphanumeric(12) // → "aB3kL9mN2pQ5"
+     */
     public static generateAlphanumeric(length?: number): string {
         return this._generate(['uppercase', 'lowercase', 'digits'], length);
     }
 
+    /**
+     * Generates a random numeric string.
+     *
+     * @example
+     * RandomString.generateNumeric(6) // → "482957"
+     */
     public static generateNumeric(length?: number): string {
         return this._generate(['digits'], length);
     }
