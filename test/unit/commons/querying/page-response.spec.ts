@@ -46,13 +46,13 @@ describe('PageResponse', () => {
     describe('transformAsync', () => {
         it('transforms data items asynchronously', async () => {
             const r = new PageResponse([1, 2, 3], 0, 10, 3);
-            const mapped = await r.transformAsync(async n => n * 10);
+            const mapped = await r.transformAsync(async n => await Promise.resolve(n * 10));
             expect(mapped.data).toEqual([10, 20, 30]);
         });
 
         it('preserves page metadata after async transform', async () => {
             const r = new PageResponse(['a', 'b'], 1, 5, 10);
-            const mapped = await r.transformAsync(async s => s.toUpperCase());
+            const mapped = await r.transformAsync(async s => await Promise.resolve(s.toUpperCase()));
             expect(mapped.page).toBe(1);
             expect(mapped.total).toBe(10);
         });

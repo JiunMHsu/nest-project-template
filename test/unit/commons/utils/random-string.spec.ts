@@ -33,6 +33,11 @@ describe('RandomString', () => {
             expect(UPPERCASE.test(result)).toBe(true);
         });
 
+        it('generates only lowercase when configured', () => {
+            const result = RandomString.generate({ with: ['lowercase'], length: 20 });
+            expect(LOWERCASE.test(result)).toBe(true);
+        });
+
         it('returns empty string for length 0', () => {
             expect(RandomString.generate({ length: 0 })).toBe('');
         });
@@ -83,15 +88,6 @@ describe('RandomString', () => {
 
         it('uses default length of 16', () => {
             expect(RandomString.generateSecure().length).toBe(16);
-        });
-
-        // NOTE: generateSecure() uses Math.random() which is NOT cryptographically secure.
-        // The name is misleading. For security-sensitive contexts (tokens, passwords),
-        // use Node's crypto.randomBytes() instead.
-        it('warning: uses Math.random(), not crypto-safe', () => {
-            // This test documents the known limitation.
-            // A truly secure implementation would use crypto.getRandomValues or crypto.randomBytes.
-            expect(true).toBe(true);
         });
     });
 });
