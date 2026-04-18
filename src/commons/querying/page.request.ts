@@ -27,8 +27,10 @@ export class PageRequest {
 
 function queryToPageRequest(__: unknown, ctx: ExecutionContext): PageRequest {
     const req: Request = ctx.switchToHttp().getRequest();
-    const page = parseInt(req.query.page as string) || DEFAULT_PAGE_NUMBER;
-    const size = parseInt(req.query.size as string) || DEFAULT_PAGE_SIZE;
+    const rawPage = parseInt(req.query.page as string);
+    const rawSize = parseInt(req.query.size as string);
+    const page = isNaN(rawPage) ? DEFAULT_PAGE_NUMBER : rawPage;
+    const size = isNaN(rawSize) ? DEFAULT_PAGE_SIZE : rawSize;
 
     try {
         return new PageRequest(page, size);

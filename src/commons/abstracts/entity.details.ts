@@ -1,6 +1,6 @@
 import { PersistentEntity } from '@commons/abstracts/persistent.entity';
 import { DateConverter } from '@commons/utils/datetime.util';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class EntityDetails {
     @ApiProperty({
@@ -21,9 +21,17 @@ export class EntityDetails {
     })
     public readonly updatedAt: string;
 
+    @ApiPropertyOptional({
+        description: `The deletion timestamp of the entity in local ISO format, Buenos Aires timezone.
+                      This field is optional and only present if the entity has been soft-deleted.`,
+        example: '2023-10-05T14:48:00.000-03:00',
+    })
+    public readonly deletedAt?: string;
+
     protected constructor(entity: PersistentEntity) {
         this.id = entity.id;
         this.createdAt = DateConverter.toLocalISO(entity.createdAt);
         this.updatedAt = DateConverter.toLocalISO(entity.updatedAt);
+        this.deletedAt = DateConverter.toLocalISO(entity.deletedAt);
     }
 }

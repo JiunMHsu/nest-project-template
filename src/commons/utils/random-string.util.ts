@@ -1,3 +1,5 @@
+import { randomBytes } from 'crypto';
+
 type Characters = 'uppercase' | 'lowercase' | 'digits' | 'specialChars';
 
 export class RandomString {
@@ -41,8 +43,16 @@ export class RandomString {
     }
 
     public static generateSecure(length?: number): string {
-        const seeds: Characters[] = ['uppercase', 'lowercase', 'digits', 'specialChars'];
-        return this._generate(seeds, length);
+        const _length = length ?? this.DEFAULT_LENGTH;
+        if (_length <= 0) return '';
+
+        const seeds = this.buildSeeds(['uppercase', 'lowercase', 'digits', 'specialChars']);
+        const bytes = randomBytes(_length);
+        let result = '';
+        for (let i = 0; i < _length; i++) {
+            result += seeds.charAt(bytes[i] % seeds.length);
+        }
+        return result;
     }
 
     public static generateAlphabetic(length?: number): string {

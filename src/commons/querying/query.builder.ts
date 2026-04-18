@@ -6,7 +6,7 @@ import { SortCriterion } from '@commons/querying/sort.request';
 interface FilterCondition {
     field: string;
     value: unknown;
-    operator: '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE' | 'IN';
+    operator: '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE' | 'IN' | 'NONE';
 }
 
 export class QueryBuilder<T> {
@@ -97,19 +97,19 @@ export class QueryBuilder<T> {
         return this;
     }
 
-    public like(
-        field: string,
-        pattern: string,
-        option: { escapeSpecialChars: boolean } = { escapeSpecialChars: false },
-    ): this {
+    /**
+     * Raw LIKE filter. The caller controls the pattern, including wildcard placement.
+     * Use contains(), startsWith(), or endsWith() for common patterns.
+     *
+     * @example
+     * .like('name', 'Jo%n')   // matches "John", "Joan", etc.
+     * .like('code', 'A__')    // matches any 3-char code starting with A
+     */
+    public like(field: string, pattern: string): this {
         this.validateField(field);
         if (!this.isPresent(pattern)) return this;
 
-        let _pattern = pattern;
-        if (option.escapeSpecialChars) {
-            _pattern = pattern.replace(/[%_]/g, '\\$&');
-        }
-        this.conditions.push({ field, value: `%${_pattern}%`, operator: 'LIKE' });
+        this.conditions.push({ field, value: pattern, operator: 'LIKE' });
         return this;
     }
 
@@ -132,13 +132,26 @@ export class QueryBuilder<T> {
     }
 
     public contains(field: string, pattern: string): this {
-        return this.like(field, pattern, { escapeSpecialChars: true });
+        this.validateField(field);
+        if (!this.isPresent(pattern)) return this;
+
+        const escaped = pattern.replace(/[%_]/g, '\\$&');
+        this.conditions.push({ field, value: `%${escaped}%`, operator: 'LIKE' });
+        return this;
     }
 
     public in(field: string, values: unknown[]): this {
-        if (!values || values.length === 0) return this;
+        if (!values) return this;
 
         this.validateField(field);
+
+        if (values.length === 0) {
+            // Empty set — no rows can match. Adds 1=0 to produce zero results
+            // rather than silently dropping the filter and returning all records.
+            this.conditions.push({ field, value: null, operator: 'NONE' });
+            return this;
+        }
+
         this.conditions.push({ field, value: values, operator: 'IN' });
         return this;
     }
@@ -166,7 +179,7 @@ export class QueryBuilder<T> {
     private apply(): SelectQueryBuilder<T> {
         const queryBuilder = this.ormQueryBuilder;
 
-        queryBuilder.where(`${this.alias}.is_active = :isActive`, { isActive: true });
+        queryBuilder.where(`${this.alias}.deletedAt IS NULL`);
 
         this.conditions.forEach(cond => {
             const paramKey = this.getNextParamKey(cond.field);
@@ -178,11 +191,9 @@ export class QueryBuilder<T> {
         });
 
         this.sortCriteria.forEach((criterion, index) => {
-            console.log(JSON.stringify(criterion));
             const { field, direction } = criterion;
 
             const _field = `${this.alias}.${field}`;
-            console.log(_field);
             if (index === 0) {
                 queryBuilder.orderBy(_field, direction);
                 return;
@@ -201,6 +212,8 @@ export class QueryBuilder<T> {
     private buildCondition(alias: string, cond: FilterCondition, paramKey: string): string {
         const fieldPath = this.buildFieldPath(alias, cond.field);
         const { operator, value } = cond;
+
+        if (operator === 'NONE') return '1=0';
 
         if (value === null && (operator === '=' || operator === '!=')) {
             return operator === '=' ? `${fieldPath} IS NULL` : `${fieldPath} IS NOT NULL`;

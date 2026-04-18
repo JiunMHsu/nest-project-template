@@ -1,4 +1,4 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { BadRequestException, createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Request } from 'express';
 import { validateOrReject } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
@@ -32,11 +32,9 @@ async function queryToDto<T>(dtoClass: new () => T, ctx: ExecutionContext): Prom
         excludeExtraneousValues: false,
     });
 
-    await validateOrReject(dtoInstance as object, { whitelist: true })
-        .then(() => dtoInstance)
-        .catch(() => {
-            throw new Error();
-        });
+    await validateOrReject(dtoInstance as object, { whitelist: true }).catch(errors => {
+        throw new BadRequestException(errors);
+    });
 
     return dtoInstance;
 }

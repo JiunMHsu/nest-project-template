@@ -80,7 +80,7 @@ function queryToSortRequest(validKeys: string[], ctx: ExecutionContext): SortReq
  *
  * Usage:
  *
- * ```typescript
+ * ```TypeScript
  * @Get()
  * public async findAll(@Sorting(['name', 'email']) sorting: SortRequest) {
  *     // Use sorting criteria
@@ -89,7 +89,7 @@ function queryToSortRequest(validKeys: string[], ctx: ExecutionContext): SortReq
  *
  * The valid key array only accepts plain field names, no nested paths.
  *
- * ```typescript
+ * ```TypeScript
  * @Sorting(['name.firstName', 'address.city']) // Invalid
  * ```
  */
