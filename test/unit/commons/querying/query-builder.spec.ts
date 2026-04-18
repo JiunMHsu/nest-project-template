@@ -166,7 +166,7 @@ describe('QueryBuilder', () => {
     });
 
     describe('between', () => {
-        it('adds two conditions when both from and to are provided', async () => {
+        it('adds two conditions when both from and to are provided (explicit)', async () => {
             const qb = new QueryBuilder(ormQb, 'e');
             qb.between('age', 10, 50);
             await qb.getMany();
@@ -174,7 +174,7 @@ describe('QueryBuilder', () => {
             expect(andWhereCalls).toHaveLength(2);
         });
 
-        it('adds one condition when only from is provided', async () => {
+        it('adds one condition when only from is provided (explicit)', async () => {
             const qb = new QueryBuilder(ormQb, 'e');
             qb.between('age', 10, undefined);
             await qb.getMany();
@@ -182,12 +182,69 @@ describe('QueryBuilder', () => {
             expect(andWhereCalls).toHaveLength(1);
         });
 
-        it('adds no conditions when both are undefined', async () => {
+        it('adds no conditions when both are undefined (explicit)', async () => {
             const qb = new QueryBuilder(ormQb, 'e');
             qb.between('age', undefined, undefined);
             await qb.getMany();
             const andWhereCalls = ormQb._calls.filter(c => c.method === 'andWhere');
             expect(andWhereCalls).toHaveLength(0);
+        });
+
+        it('adds two conditions when DateRange has both bounds', async () => {
+            const qb = new QueryBuilder(ormQb, 'e');
+            qb.between('age', { from: 10, to: 50 } as never);
+            await qb.getMany();
+            const andWhereCalls = ormQb._calls.filter(c => c.method === 'andWhere');
+            expect(andWhereCalls).toHaveLength(2);
+        });
+
+        it('adds one condition when DateRange has only from', async () => {
+            const qb = new QueryBuilder(ormQb, 'e');
+            qb.between('age', { from: 10 } as never);
+            await qb.getMany();
+            const andWhereCalls = ormQb._calls.filter(c => c.method === 'andWhere');
+            expect(andWhereCalls).toHaveLength(1);
+        });
+
+        it('adds no conditions when DateRange is empty', async () => {
+            const qb = new QueryBuilder(ormQb, 'e');
+            qb.between('age', {});
+            await qb.getMany();
+            const andWhereCalls = ormQb._calls.filter(c => c.method === 'andWhere');
+            expect(andWhereCalls).toHaveLength(0);
+        });
+    });
+
+    describe('withDeleted', () => {
+        it('applies deletedAt IS NULL by default', async () => {
+            const qb = new QueryBuilder(ormQb, 'e');
+            await qb.getMany();
+            const whereCalls = ormQb._calls.filter(c => c.method === 'where');
+            expect(whereCalls.some(c => (c.args[0] as string).includes('deletedAt IS NULL'))).toBe(true);
+        });
+
+        it('omits deletedAt IS NULL when withDeleted(true) is called', async () => {
+            const qb = new QueryBuilder(ormQb, 'e');
+            qb.withDeleted(true);
+            await qb.getMany();
+            const whereCalls = ormQb._calls.filter(c => c.method === 'where');
+            expect(whereCalls.some(c => (c.args[0] as string)?.includes('deletedAt IS NULL'))).toBe(false);
+        });
+
+        it('applies deletedAt IS NULL when withDeleted(false) is called', async () => {
+            const qb = new QueryBuilder(ormQb, 'e');
+            qb.withDeleted(false);
+            await qb.getMany();
+            const whereCalls = ormQb._calls.filter(c => c.method === 'where');
+            expect(whereCalls.some(c => (c.args[0] as string).includes('deletedAt IS NULL'))).toBe(true);
+        });
+
+        it('defaults to true when withDeleted() called with no argument', async () => {
+            const qb = new QueryBuilder(ormQb, 'e');
+            qb.withDeleted();
+            await qb.getMany();
+            const whereCalls = ormQb._calls.filter(c => c.method === 'where');
+            expect(whereCalls.some(c => (c.args[0] as string)?.includes('deletedAt IS NULL'))).toBe(false);
         });
     });
 

@@ -2,6 +2,7 @@ import { SelectQueryBuilder } from 'typeorm';
 import { PageResponse } from '@commons/querying/page.response';
 import { PageRequest } from '@commons/querying/page.request';
 import { SortCriterion } from '@commons/querying/sort.request';
+import { DateRange } from '@commons/querying/date-range';
 
 interface FilterCondition {
     field: string;
@@ -18,9 +19,11 @@ interface FilterCondition {
  *
  * @example
  * const results = await new QueryBuilder(repo.createQueryBuilder('u'), 'u', sorting.getCriteria())
+ *   .withDeleted(filter.deleted)
  *   .equals('u.status', status)
  *   .contains('u.name', search)
- *   .between('u.createdAt', createdAfter, createdBefore)
+ *   .between('u.createdAt', filter.creationDateRange)
+ *   .between('u.updatedAt', filter.updateDateRange)
  *   .getPage(paging);
  */
 export class QueryBuilder<T> {
@@ -30,6 +33,7 @@ export class QueryBuilder<T> {
     private conditions: FilterCondition[];
     private allowedFields: Set<string>;
     private parameterCounter: number;
+    private includeDeleted: boolean;
 
     private sortCriteria: SortCriterion[];
 
@@ -52,8 +56,21 @@ export class QueryBuilder<T> {
         this.allowedFields = new Set(allowedFields);
         this.conditions = [];
         this.parameterCounter = 0;
+        this.includeDeleted = false;
 
         this.sortCriteria = sortCriteria;
+    }
+
+    /**
+     * Bypasses the default `deletedAt IS NULL` filter, allowing soft-deleted
+     * records to appear in results. Typically driven by {@link EntitySpecification.deleted}.
+     *
+     * @example
+     * queryBuilder.withDeleted(filter.deleted)
+     */
+    public withDeleted(include?: boolean): this {
+        this.includeDeleted = include ?? true;
+        return this;
     }
 
     private isPresent(value: unknown, option: { allowNull: boolean } = { allowNull: false }): boolean {
@@ -142,7 +159,7 @@ export class QueryBuilder<T> {
      * Use `contains()`, `startsWith()`, or `endsWith()` for common patterns with automatic escaping.
      *
      * @example
-     * .like('name', 'Jo%n')   // matches "John", "Joan", etc.
+     * .like('name', 'Jo%n')   // matches "John", "Joan", etc
      * .like('code', 'A__')    // matches any 3-char code starting with A
      */
     public like(field: string, pattern: string): this {
@@ -226,11 +243,22 @@ export class QueryBuilder<T> {
      * Shorthand for combining `greaterThanOrEqual` and `lessThanOrEqual`.
      * Either bound may be omitted — only the provided ones are applied.
      *
+     * Accepts either a `DateRange` object or explicit `from`/`to` values.
+     *
      * @example
-     * .between('price', 10, 50)           // 10 <= price <= 50
-     * .between('createdAt', startDate)    // createdAt >= startDate (no upper bound)
+     * .between('price', 10, 50)
+     * .between('createdAt', startDate, endDate)
+     * .between('createdAt', filter.creationDateRange)   // DateRange from EntitySpecification getter
      */
-    public between(field: string, from?: number | Date, to?: number | Date): this {
+    public between(field: string, rangeOrFrom?: DateRange | number | Date, to?: number | Date): this {
+        if (rangeOrFrom !== null && typeof rangeOrFrom === 'object' && !(rangeOrFrom instanceof Date)) {
+            const { from, to: rangeTo } = rangeOrFrom;
+            if (this.isPresent(from)) this.greaterThanOrEqual(field, from);
+            if (this.isPresent(rangeTo)) this.lessThanOrEqual(field, rangeTo);
+            return this;
+        }
+
+        const from = rangeOrFrom as number | Date | undefined;
         if (this.isPresent(from)) this.greaterThanOrEqual(field, from);
         if (this.isPresent(to)) this.lessThanOrEqual(field, to);
         return this;
@@ -260,7 +288,7 @@ export class QueryBuilder<T> {
     private apply(): SelectQueryBuilder<T> {
         const queryBuilder = this.ormQueryBuilder;
 
-        queryBuilder.where(`${this.alias}.deletedAt IS NULL`);
+        if (!this.includeDeleted) queryBuilder.where(`${this.alias}.deletedAt IS NULL`);
 
         this.conditions.forEach(cond => {
             const paramKey = this.getNextParamKey(cond.field);
