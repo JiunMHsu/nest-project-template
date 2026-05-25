@@ -72,17 +72,17 @@ cp .env.schema .env
 ### 2. Install dependencies
 
 ```bash
-npm install
+pnpm install
 ```
 
 ### 3. Run
 
 ```bash
 # Development (watch mode)
-npm run dev
+pnpm run dev
 
 # Production
-npm run build && npm run prod
+pnpm run build && pnpm run prod
 ```
 
 ---
@@ -107,26 +107,26 @@ import { DatabaseModule } from '@infrastructure/database/database.module';
 
 ```bash
 # Generate a migration from entity changes
-npm run migration:gen --name=migration-name
+MIGRATION_NAME=migration-name pnpm run migration:gen
 
 # Run pending migrations
-npm run migration:run
+pnpm run migration:run
 
 # Revert last migration
-npm run migration:revert
+pnpm run migration:revert
 
 # Show migration status
-npm run migration:show
+pnpm run migration:show
 ```
 
 ### Seeding
 
 ```bash
 # Run seeders
-npm run seed
+pnpm run seed
 
 # Clear data and re-seed
-npm run seed:clear
+pnpm run seed:clear
 ```
 
 ---
@@ -135,22 +135,22 @@ npm run seed:clear
 
 ```bash
 # All tests
-npm test
+pnpm test
 
 # Unit tests only
-npm run test:unit
+pnpm run test:unit
 
 # Integration tests only
-npm run test:integration
+pnpm run test:integration
 
 # E2E tests only
-npm run test:e2e
+pnpm run test:e2e
 
 # Watch mode
-npm run test:watch
+pnpm run test:watch
 
 # Coverage
-npm run test:cov
+pnpm run test:cov
 ```
 
 Tests live in `test/unit/`, `test/integration/`, and `test/e2e/` and mirror the `src/` structure.

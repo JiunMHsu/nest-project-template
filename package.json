@@ -25,11 +25,11 @@
     "seed:clear": "pnpm run build && node dist/infrastructure/database/seeder/command.js --clear",
     "seed:dev": "pnpm run seed:clear",
     "seed:prod": "pnpm run seed",
-    "migration:gen": "pnpm run build && npx typeorm migration:generate src/infrastructure/database/migrations/$npm_config_name -d dist/infrastructure/database/postgres/postgres.datasource.js",
+    "migration:gen": "pnpm run build && npx typeorm migration:generate src/infrastructure/database/migrations/$MIGRATION_NAME -d dist/infrastructure/database/postgres/postgres.datasource.js",
     "migration:run": "pnpm run build && npx typeorm migration:run -d dist/infrastructure/database/postgres/postgres.datasource.js",
     "migration:revert": "pnpm run build && npx typeorm migration:revert -d dist/infrastructure/database/postgres/postgres.datasource.js",
     "migration:show": "pnpm run build && npx typeorm migration:show -d dist/infrastructure/database/postgres/postgres.datasource.js",
-    "migration:create": "npx typeorm migration:create src/infrastructure/database/migrations/$npm_config_name",
+    "migration:create": "npx typeorm migration:create src/infrastructure/database/migrations/$MIGRATION_NAME",
     "migration:drop": "pnpm run build && npx typeorm schema:drop -d dist/infrastructure/database/postgres/postgres.datasource.js"
   },
   "dependencies": {
