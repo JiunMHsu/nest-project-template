@@ -78,7 +78,7 @@
     "@types/qs": "^6.15.0",
     "@types/supertest": "^6.0.2",
     "@typescript-eslint/eslint-plugin": "^8.59.2",
-    "@typescript-eslint/parser": "^8.55.0",
+    "@typescript-eslint/parser": "^8.60.0",
     "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^10.2.0",
     "eslint-config-prettier": "^10.1.8",
