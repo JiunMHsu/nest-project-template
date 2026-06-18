@@ -220,10 +220,8 @@ defaults (`page=0`, `size=20`). Invalid values throw `BadRequestException`.
 
 ```typescript
 @Get()
-findAll(@Paging()
-paging: PageRequest
-)
-{ ...
+findAll(@Paging() paging: PageRequest) {
+    ...
 }
 // GET /items?page=1&size=10
 ```
@@ -251,10 +249,9 @@ const next = page.getNextPageRequest();
 ```typescript
 @ApiPaginatedResponse(ItemDto)
 @Get()
-findAll(@Paging()
-paging: PageRequest
-):
-Promise < PageResponse < ItemDto >> { ... }
+findAll(
+    @Paging() paging: PageRequest
+): Promise<PageResponse<ItemDto>> { ... }
 ```
 
 ---
@@ -269,14 +266,14 @@ Invalid fields throw `BadRequestException`.
 
 ```typescript
 @Get()
-findAll(@Sorting(['name', 'status'])
-sorting: SortRequest
-)
-{
+findAll(
+    @Sorting(['name', 'status'])
+    sorting: SortRequest
+) {
     const criteria = sorting.getCriteria();
     // Pass directly to QueryBuilder:
     new QueryBuilder(qb, 'u', criteria)
-...
+    ...
 }
 // GET /items?sortBy=name,ASC&sortBy=createdAt,DESC
 ```
@@ -290,10 +287,10 @@ Comma-separated string values are automatically split into arrays. Invalid input
 
 ```typescript
 @Get()
-findAll(@QueryParams()
-filter: ItemFilterDto
-)
-{ ...
+    findAll(@QueryParams()
+    filter: ItemFilterDto
+) {
+    ...
 }
 // GET /items?status=active&tags=a,b,c
 // → filter.tags = ['a', 'b', 'c']
