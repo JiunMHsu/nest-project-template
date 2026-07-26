@@ -25,12 +25,13 @@ src/
 ├── commons/
 │   ├── abstracts/          # Base entity and response DTO classes
 │   ├── constants/          # App-wide constants (timezone, etc.)
-│   ├── decorators/         # Swagger helpers
+│   ├── decorators/         # Swagger & request/response logging helpers
 │   ├── filters/            # Exception filters
 │   ├── guards/             # Auth guards
+│   ├── interceptors/       # Request/response logging interceptor
 │   ├── querying/           # Query builder, pagination, sorting, filter DTOs
 │   ├── transformers/       # class-transformer decorators
-│   └── utils/              # String, number, date, enum, entity utilities
+│   └── utils/              # Date, enum, entity, and random-string utilities
 ├── features/               # Domain feature modules
 ├── health/                 # Health check endpoint
 └── infrastructure/         # Config, database, logger, migrations
@@ -48,26 +49,29 @@ Copy `.env.schema` to `.env` and fill in your values:
 cp .env.schema .env
 ```
 
-| Variable                 | Default                 | Description                                                      |
-|--------------------------|-------------------------|------------------------------------------------------------------|
-| `NODE_ENV`               | `development`           | Runtime environment                                              |
-| `LOGGER_LEVEL`           | `log`                   | NestJS logger level (`log`, `warn`, `error`, `debug`, `verbose`) |
-| `APP_HOST`               | `0.0.0.0`               | Server bind address                                              |
-| `APP_PORT`               | `7878`                  | Server port                                                      |
-| `APP_URL`                | —                       | Public base URL of the app                                       |
-| `CORS_ORIGINS`           | `http://localhost:5173` | Comma-separated list of allowed CORS origins                     |
-| `JWT_SECRET`             | —                       | Secret for access tokens                                         |
-| `JWT_EXPIRES_IN`         | `3600`                  | Access token lifetime in seconds                                 |
-| `JWT_REFRESH_SECRET`     | —                       | Secret for refresh tokens                                        |
-| `JWT_REFRESH_EXPIRES_IN` | `604800`                | Refresh token lifetime in seconds                                |
-| `HASH_SALT`              | `5`                     | bcrypt salt rounds                                               |
-| `DB_HOST`                | `localhost`             | PostgreSQL host                                                  |
-| `DB_PORT`                | `5432`                  | PostgreSQL port                                                  |
-| `DB_USER`                | —                       | PostgreSQL user                                                  |
-| `DB_PASSWORD`            | —                       | PostgreSQL password                                              |
-| `DB_NAME`                | —                       | PostgreSQL database name                                         |
-| `ADMIN_EMAIL`            | —                       | Seed admin account email                                         |
-| `ADMIN_PASSWORD`         | —                       | Seed admin account password                                      |
+| Variable                 | Default                    | Description                                                                    |
+|--------------------------|----------------------------|--------------------------------------------------------------------------------|
+| `NODE_ENV`               | `development`              | Runtime environment (`development`, `production`, `test`)                      |
+| `LOG_LEVEL`              | `log`                      | Minimum logger level (`verbose`, `debug`, `log`, `warn`, `error`, `fatal`)    |
+| `APP_NAME`               | `App`                      | Application name (used as the logger context)                                  |
+| `APP_HOST`               | `127.0.0.1`               | Server bind address                                                            |
+| `APP_PORT`               | `9898`                     | Server port                                                                    |
+| `APP_URL`                | `http://<APP_HOST>:<APP_PORT>` | Public base URL of the app                                                |
+| `CORS_ORIGINS`           | `http://localhost:5173`    | Comma-separated list of allowed CORS origins                                   |
+| `JWT_SECRET`             | — (required)               | Secret for access tokens                                                       |
+| `JWT_EXPIRES_IN`         | `3600`                     | Access token lifetime in seconds                                               |
+| `JWT_REFRESH_SECRET`     | — (required)               | Secret for refresh tokens                                                      |
+| `JWT_REFRESH_EXPIRES_IN` | `604800`                   | Refresh token lifetime in seconds                                              |
+| `HASH_SALT`              | `10`                       | bcrypt salt rounds                                                             |
+| `DB_HOST`                | `localhost`                | PostgreSQL host                                                                |
+| `DB_PORT`                | `5432`                     | PostgreSQL port                                                                |
+| `DB_USER`                | `postgres`                 | PostgreSQL user                                                                |
+| `DB_PASSWORD`            | `postgres`                 | PostgreSQL password                                                            |
+| `DB_NAME`                | `nest_template`            | PostgreSQL database name                                                       |
+| `DB_SYNCHRONIZE`         | `false`                    | TypeORM auto-sync schema (keep `false` outside local dev)                      |
+| `DB_DROP_SCHEMA`         | `false`                    | Drop the schema on connection (destructive — local dev only)                  |
+| `ADMIN_EMAIL`            | `admin@admin.com`          | Seed admin account email                                                       |
+| `ADMIN_PASSWORD`         | `admin`                    | Seed admin account password                                                    |
 
 ### 2. Install dependencies
 
@@ -393,41 +397,6 @@ class FilterDto {
 
 ---
 
-### Number Utilities
-
-```typescript
-roundTo(3.14159, 2); // → 3.14
-roundToDefault(1.23456); // → 1.2346  (4 decimal places)
-roundToTwoDecimals(10.9876); // → 10.99
-
-sequence(1, 5); // → [1, 2, 3, 4, 5]
-sequence(3, 3); // → [3]
-```
-
-> `roundTo` uses the multiply-divide method. For financial calculations requiring exact decimal rounding, use a
-> dedicated decimal library.
-
----
-
-### String Utilities
-
-**`StringBuilder`** — fluent string builder for iterative or conditional construction:
-
-```typescript
-new StringBuilder().appendLine('Title').appendItemized('Point one').appendItemized('Point two').toString();
-// → "Title\n- Point one\n- Point two\n"
-```
-
-**`StringSanitizer.removeSpecialChars(input)`** — removes all non-letter, non-digit, non-space characters and trims
-whitespace. Preserves Unicode letters (`é`, `ñ`, `中`).
-
-```typescript
-StringSanitizer.removeSpecialChars('Hello@World#123!'); // → 'HelloWorld123'
-StringSanitizer.removeSpecialChars('café naïve'); // → 'café naïve'
-```
-
----
-
 ### RandomString
 
 ```typescript
@@ -471,6 +440,32 @@ getEnumValueByString(Status, undefined); // → undefined
 
 // Map between enums with matching values
 convertEnum(SourceEnum.X, TargetEnum);
+```
+
+---
+
+## Logging
+
+The app uses NestJS's `ConsoleLogger`, configured once at startup from the environment and installed as the global
+logger in `main.ts` (`app.useLogger(...)`). Every `new Logger(context)` in the codebase then routes through it —
+respecting the configured level and emitting timestamps.
+
+- **`LOG_LEVEL`** sets the minimum level; anything below it is suppressed (e.g. `warn` hides `log`, `debug`, `verbose`).
+- **`APP_NAME`** is used as the default logger context.
+
+### Request/response logging
+
+Decorators in `@commons/decorators/log.decorator.ts` attach a logging interceptor to a route. Sensitive keys
+(`authorization`, `apikey`, `secret`) are redacted from the logged payloads.
+
+```typescript
+import { LogReqRes, LogRequest, LogResponse } from '@commons/decorators/log.decorator';
+
+@LogReqRes()   // logs both request (body, query, params) and response
+@LogRequest()  // logs the request only
+@LogResponse() // logs the response only
+@Get()
+findAll() { ... }
 ```
 
 ---
