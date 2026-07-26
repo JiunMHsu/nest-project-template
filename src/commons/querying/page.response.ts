@@ -1,5 +1,6 @@
-import { PageRequest } from '@commons/querying/page.request';
 import { ApiProperty } from '@nestjs/swagger';
+
+import { PageRequest } from '@commons/querying/page.request';
 
 /**
  * Standardised paginated response wrapper.

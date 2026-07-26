@@ -1,8 +1,10 @@
 import { IsBoolean, IsOptional, IsUUID } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { TransformToUTC } from '@commons/transformers/datetime.transformer';
+
 import { ApiPropertyOptional } from '@nestjs/swagger';
+
 import { DateRange } from '@commons/querying/date-range';
+import { TransformToUTC } from '@commons/transformers/datetime.transformer';
 
 /**
  * Abstract base class for query filter DTOs.

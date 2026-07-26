@@ -1,6 +1,7 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
 import { PersistentEntity } from '@commons/abstracts/persistent.entity';
 import { DateConverter } from '@commons/utils/datetime.util';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class EntityDetails {
     @ApiProperty({
