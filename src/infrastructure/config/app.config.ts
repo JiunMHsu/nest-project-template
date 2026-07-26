@@ -1,41 +1,69 @@
+import { existsSync } from 'node:fs';
 import { ConfigFactory } from '@nestjs/config';
 
-export const configuration: ConfigFactory = () => ({
-    env: process.env.NODE_ENV || 'development',
+// Avoids ENOENT throws when running the app in a container.
+if (existsSync('.env')) process.loadEnvFile();
 
-    loggerLevel: process.env.LOGGER_LEVEL || 'log',
+export const config = {
+    env: getOrDefault<'development' | 'production' | 'test'>('NODE_ENV', 'development'),
+    logLevel: getOrDefault<'verbose' | 'debug' | 'log' | 'warn' | 'error' | 'fatal'>('LOGGER_LEVEL', 'log'),
 
-    host: process.env.APP_HOST || '127.0.0.1',
-    port: parseInt(process.env.APP_PORT || '3524', 10),
-
-    corsOrigins: process.env.CORS_ORIGINS
-        ? process.env.CORS_ORIGINS.split(',').map(origin => origin.trim())
-        : ['http://localhost:5173'],
-
-    appUrl: process.env.APP_URL || `http://${process.env.APP_HOST}:${process.env.APP_PORT}`,
-
-    jwt: {
-        secret: process.env.JWT_SECRET || '',
-        expiresIn: parseInt(process.env.JWT_EXPIRES_IN || '3600', 10), // 1 hour
-        refreshSecret: process.env.JWT_REFRESH_SECRET || '',
-        refreshExpiresIn: parseInt(
-            process.env.JWT_REFRESH_EXPIRES_IN || '2592000', // 30 days
-            10,
+    app: {
+        host: getOrDefault('APP_HOST', '127.0.0.1'),
+        port: parseInt(getOrDefault('APP_PORT', '9898'), 10),
+        url: getOrDefault(
+            'APP_URL',
+            `http://${getOrDefault('APP_HOST', '127.0.0.1')}:${getOrDefault('APP_PORT', '9898')}`,
         ),
+        name: getOrDefault('APP_NAME', 'App'),
     },
 
-    hashSalt: parseInt(process.env.HASH_SALT || '10', 10),
+    cors: {
+        origins: getOrDefault('CORS_ORIGINS', 'http://localhost:5173')
+            .split(',')
+            .map(origin => origin.trim()),
+    },
+
+    jwt: {
+        secret: getOrThrow('JWT_SECRET'),
+        expiresIn: parseInt(getOrDefault('JWT_EXPIRES_IN', '3600'), 10),
+        refreshSecret: getOrThrow('JWT_REFRESH_SECRET'),
+        refreshExpiresIn: parseInt(getOrDefault('JWT_REFRESH_EXPIRES_IN', '604800'), 10),
+    },
+
+    hashSalt: parseInt(getOrDefault('HASH_SALT', '10'), 10),
 
     database: {
-        host: process.env.DB_HOST || 'localhost',
-        port: parseInt(process.env.DB_PORT || '5432', 10),
-        username: process.env.DB_USER || 'postgres',
-        password: process.env.DB_PASSWORD || 'postgres',
-        name: process.env.DB_NAME || 'nest_template',
+        host: getOrDefault('DB_HOST', 'localhost'),
+        port: parseInt(getOrDefault('DB_PORT', '5432'), 10),
+        username: getOrDefault('DB_USER', 'postgres'),
+        password: getOrDefault('DB_PASSWORD', 'postgres'),
+        name: getOrDefault('DB_NAME', 'nest_template'),
+        synchronize: getBooleanOrDefault('DB_SYNCHRONIZE', false),
+        dropSchema: getBooleanOrDefault('DB_DROP_SCHEMA', false),
     },
 
     admin: {
-        email: process.env.ADMIN_EMAIL || '',
-        password: process.env.ADMIN_PASSWORD || '',
+        email: getOrDefault('ADMIN_EMAIL', 'admin@admin.com'),
+        password: getOrDefault('ADMIN_PASSWORD', 'admin'),
     },
-});
+};
+
+export const configuration: ConfigFactory = () => config;
+
+function getOrThrow<T extends string>(key: string): T {
+    const value = process.env[key];
+    if (!value) throw new Error(`Environment variable not found: ${key}`);
+    return value as T;
+}
+
+function getOrDefault<T extends string>(key: string, defaultValue: T): T {
+    const value = process.env[key];
+    return (value ?? defaultValue) as T;
+}
+
+function getBooleanOrDefault(key: string, defaultValue: boolean): boolean {
+    const boolMap: { [key: string]: boolean } = { true: true, false: false };
+    const value = process.env[key] ?? '';
+    return boolMap[value.toLowerCase()] ?? defaultValue;
+}
