@@ -1,28 +1,28 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from '@src/app.module';
-import { SeederService } from './seeder.service';
 import { Logger } from '@nestjs/common';
 
+import { SeederAppModule } from './seeder-app.module';
+import { SeederService } from './seeder.service';
+import { SeedOptions } from './seeder.options';
+
 async function bootstrap() {
-    const app = await NestFactory.createApplicationContext(AppModule);
+    const app = await NestFactory.createApplicationContext(SeederAppModule, { logger: ['log', 'error', 'warn'] });
     const logger = new Logger('Seeder');
 
-    const args = process.argv.slice(2);
-    const shouldClear = args.includes('--clear');
-
     const seeder = app.get(SeederService);
+    const options = new SeedOptions(process.argv.slice(2));
 
     try {
-        if (shouldClear) {
-            logger.log('🗑️  Clearing database...');
+        if (options.shouldClear) {
+            logger.log('Clearing database...');
             await seeder.clear();
         }
 
-        logger.log('🌱 Seeding database...');
-        await seeder.seed();
-        logger.log('✅ Seeding completed!');
+        logger.log('Seeding database...');
+        await seeder.seed(options);
+        logger.log('Seeding completed.');
     } catch (error) {
-        logger.error('❌ Seeding failed:', error);
+        logger.error('Seeding failed:', error);
         throw error;
     } finally {
         await app.close();
