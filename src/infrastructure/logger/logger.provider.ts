@@ -1,9 +1,8 @@
-import { Logger, Provider } from '@nestjs/common';
+import { ConsoleLogger, LogLevel, Provider } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { LogLevel } from '@nestjs/common/services/logger.service';
 
 export const loggerProvider: Provider = {
-    provide: Logger,
+    provide: ConsoleLogger,
     useFactory: (configService: ConfigService) => {
         const level = configService.get<LogLevel>('logLevel');
         const appName = configService.get<string>('app.name');
@@ -17,11 +16,9 @@ export const loggerProvider: Provider = {
             fatal: ['fatal'],
         };
 
-        const levelsToEnable = logLevelHierarchy[level] || ['log', 'warn', 'error', 'fatal'];
+        const logLevels = logLevelHierarchy[level] ?? logLevelHierarchy.log;
 
-        const logger = new Logger(appName, { timestamp: true });
-        logger.localInstance.setLogLevels?.(levelsToEnable);
-        return logger;
+        return new ConsoleLogger(appName, { timestamp: true, logLevels });
     },
     inject: [ConfigService],
 };

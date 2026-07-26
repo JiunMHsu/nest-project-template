@@ -1,13 +1,15 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { Logger, ValidationError, ValidationPipe } from '@nestjs/common';
+import { ConsoleLogger, Logger, ValidationError, ValidationPipe } from '@nestjs/common';
 import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create(AppModule, { bufferLogs: true });
+
+    app.useLogger(app.get(ConsoleLogger));
 
     const configService = app.get(ConfigService);
     const cors: CorsOptions = {
@@ -28,8 +30,8 @@ async function bootstrap() {
     const document = new DocumentBuilder().setTitle('Nest REST API Template').setVersion('1.0').build();
     SwaggerModule.setup('docs', app, () => SwaggerModule.createDocument(app, document));
 
-    const host = configService.get<string>('host');
-    const port = configService.get<number>('port');
+    const host = configService.get<string>('app.host');
+    const port = configService.get<number>('app.port');
 
     await app.listen(port, host);
 
