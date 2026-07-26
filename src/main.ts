@@ -1,9 +1,10 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { Logger, ValidationError, ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { Logger, ValidationError, ValidationPipe } from '@nestjs/common';
 import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
+
+import { AppModule } from './app.module';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
