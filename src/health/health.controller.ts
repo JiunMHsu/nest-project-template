@@ -1,6 +1,8 @@
 import { Controller, Get, HttpCode, HttpStatus, Logger } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+import { LogReqRes } from '@commons/decorators/log.decorator';
+
 @Controller('health')
 @ApiTags('health')
 export class HealthController {
@@ -14,6 +16,7 @@ export class HealthController {
         description: 'Health check successful.',
         schema: { type: 'object', properties: { status: { type: 'string' } } },
     })
+    @LogReqRes()
     public run(): { status: string } {
         this.logger.log('Health endpoint called');
         return { status: 'ok' };

@@ -1,11 +1,12 @@
 import { Logger, Provider } from '@nestjs/common';
-import { LogLevel } from '@nestjs/common/services/logger.service';
 import { ConfigService } from '@nestjs/config';
+import { LogLevel } from '@nestjs/common/services/logger.service';
 
 export const loggerProvider: Provider = {
     provide: Logger,
     useFactory: (configService: ConfigService) => {
-        const level = configService.get<LogLevel>('loggerLevel');
+        const level = configService.get<LogLevel>('logLevel');
+        const appName = configService.get<string>('app.name');
 
         const logLevelHierarchy: Record<LogLevel, LogLevel[]> = {
             verbose: ['verbose', 'debug', 'log', 'warn', 'error', 'fatal'],
@@ -18,7 +19,7 @@ export const loggerProvider: Provider = {
 
         const levelsToEnable = logLevelHierarchy[level] || ['log', 'warn', 'error', 'fatal'];
 
-        const logger = new Logger('Orichat', { timestamp: true });
+        const logger = new Logger(appName, { timestamp: true });
         logger.localInstance.setLogLevels?.(levelsToEnable);
         return logger;
     },
