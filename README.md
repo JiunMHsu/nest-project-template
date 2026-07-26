@@ -7,7 +7,7 @@ infrastructure problems.
 ## Stack
 
 | Layer      | Technology                          |
-|------------|-------------------------------------|
+| ---------- | ----------------------------------- |
 | Framework  | NestJS 11                           |
 | Language   | TypeScript 6                        |
 | Database   | PostgreSQL + TypeORM 0.3            |
@@ -49,29 +49,29 @@ Copy `.env.schema` to `.env` and fill in your values:
 cp .env.schema .env
 ```
 
-| Variable                 | Default                    | Description                                                                    |
-|--------------------------|----------------------------|--------------------------------------------------------------------------------|
-| `NODE_ENV`               | `development`              | Runtime environment (`development`, `production`, `test`)                      |
-| `LOG_LEVEL`              | `log`                      | Minimum logger level (`verbose`, `debug`, `log`, `warn`, `error`, `fatal`)    |
-| `APP_NAME`               | `App`                      | Application name (used as the logger context)                                  |
-| `APP_HOST`               | `127.0.0.1`               | Server bind address                                                            |
-| `APP_PORT`               | `9898`                     | Server port                                                                    |
-| `APP_URL`                | `http://<APP_HOST>:<APP_PORT>` | Public base URL of the app                                                |
-| `CORS_ORIGINS`           | `http://localhost:5173`    | Comma-separated list of allowed CORS origins                                   |
-| `JWT_SECRET`             | — (required)               | Secret for access tokens                                                       |
-| `JWT_EXPIRES_IN`         | `3600`                     | Access token lifetime in seconds                                               |
-| `JWT_REFRESH_SECRET`     | — (required)               | Secret for refresh tokens                                                      |
-| `JWT_REFRESH_EXPIRES_IN` | `604800`                   | Refresh token lifetime in seconds                                              |
-| `HASH_SALT`              | `10`                       | bcrypt salt rounds                                                             |
-| `DB_HOST`                | `localhost`                | PostgreSQL host                                                                |
-| `DB_PORT`                | `5432`                     | PostgreSQL port                                                                |
-| `DB_USER`                | `postgres`                 | PostgreSQL user                                                                |
-| `DB_PASSWORD`            | `postgres`                 | PostgreSQL password                                                            |
-| `DB_NAME`                | `nest_template`            | PostgreSQL database name                                                       |
-| `DB_SYNCHRONIZE`         | `false`                    | TypeORM auto-sync schema (keep `false` outside local dev)                      |
-| `DB_DROP_SCHEMA`         | `false`                    | Drop the schema on connection (destructive — local dev only)                  |
-| `ADMIN_EMAIL`            | `admin@admin.com`          | Seed admin account email                                                       |
-| `ADMIN_PASSWORD`         | `admin`                    | Seed admin account password                                                    |
+| Variable                 | Default                        | Description                                                                |
+| ------------------------ | ------------------------------ | -------------------------------------------------------------------------- |
+| `NODE_ENV`               | `development`                  | Runtime environment (`development`, `production`, `test`)                  |
+| `LOG_LEVEL`              | `log`                          | Minimum logger level (`verbose`, `debug`, `log`, `warn`, `error`, `fatal`) |
+| `APP_NAME`               | `App`                          | Application name (used as the logger context)                              |
+| `APP_HOST`               | `127.0.0.1`                    | Server bind address                                                        |
+| `APP_PORT`               | `9898`                         | Server port                                                                |
+| `APP_URL`                | `http://<APP_HOST>:<APP_PORT>` | Public base URL of the app                                                 |
+| `CORS_ORIGINS`           | `http://localhost:5173`        | Comma-separated list of allowed CORS origins                               |
+| `JWT_SECRET`             | — (required)                   | Secret for access tokens                                                   |
+| `JWT_EXPIRES_IN`         | `3600`                         | Access token lifetime in seconds                                           |
+| `JWT_REFRESH_SECRET`     | — (required)                   | Secret for refresh tokens                                                  |
+| `JWT_REFRESH_EXPIRES_IN` | `604800`                       | Refresh token lifetime in seconds                                          |
+| `HASH_SALT`              | `10`                           | bcrypt salt rounds                                                         |
+| `DB_HOST`                | `localhost`                    | PostgreSQL host                                                            |
+| `DB_PORT`                | `5432`                         | PostgreSQL port                                                            |
+| `DB_USER`                | `postgres`                     | PostgreSQL user                                                            |
+| `DB_PASSWORD`            | `postgres`                     | PostgreSQL password                                                        |
+| `DB_NAME`                | `nest_template`                | PostgreSQL database name                                                   |
+| `DB_SYNCHRONIZE`         | `false`                        | TypeORM auto-sync schema (keep `false` outside local dev)                  |
+| `DB_DROP_SCHEMA`         | `false`                        | Drop the schema on connection (destructive — local dev only)               |
+| `ADMIN_EMAIL`            | `admin@admin.com`              | Seed admin account email                                                   |
+| `ADMIN_PASSWORD`         | `admin`                        | Seed admin account password                                                |
 
 ### 2. Install dependencies
 
@@ -190,7 +190,7 @@ const results = await new QueryBuilder(
 **Filter methods:**
 
 | Method                              | SQL equivalent             | Notes                                                    |
-|-------------------------------------|----------------------------|----------------------------------------------------------|
+| ----------------------------------- | -------------------------- | -------------------------------------------------------- |
 | `.equals(field, value)`             | `= value` / `IS NULL`      | Null produces `IS NULL`                                  |
 | `.notEquals(field, value)`          | `!= value` / `IS NOT NULL` | Null produces `IS NOT NULL`                              |
 | `.greaterThan(field, value)`        | `> value`                  |                                                          |
@@ -307,7 +307,7 @@ Comma-separated string values are automatically split into arrays. Invalid input
 Abstract base class for filter DTOs. Provides out of the box:
 
 | Field           | Type      | Description                                          |
-|-----------------|-----------|------------------------------------------------------|
+| --------------- | --------- | ---------------------------------------------------- |
 | `id`            | `string`  | Filter by exact UUID                                 |
 | `createdAfter`  | `Date`    | Lower bound on `createdAt` (Buenos Aires local time) |
 | `createdBefore` | `Date`    | Upper bound on `createdAt` (Buenos Aires local time) |
@@ -345,7 +345,7 @@ queryBuilder
 **`PersistentEntity`** — abstract TypeORM entity with standard audit columns:
 
 | Column      | Type                | Description                 |
-|-------------|---------------------|-----------------------------|
+| ----------- | ------------------- | --------------------------- |
 | `id`        | `uuid`              | Primary key, auto-generated |
 | `createdAt` | `timestamp`         | Set on insert               |
 | `updatedAt` | `timestamp`         | Updated automatically       |
@@ -483,7 +483,7 @@ app config.
 The following aliases are configured in both `tsconfig.json` and `vitest.config.unit.ts`:
 
 | Alias             | Path                  |
-|-------------------|-----------------------|
+| ----------------- | --------------------- |
 | `@src`            | `src/`                |
 | `@commons`        | `src/commons/`        |
 | `@infrastructure` | `src/infrastructure/` |
