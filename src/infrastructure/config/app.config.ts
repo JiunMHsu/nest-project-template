@@ -9,13 +9,13 @@ export const config = {
     logLevel: getOrDefault<'verbose' | 'debug' | 'log' | 'warn' | 'error' | 'fatal'>('LOGGER_LEVEL', 'log'),
 
     app: {
+        name: getOrDefault('APP_NAME', 'App'),
         host: getOrDefault('APP_HOST', '127.0.0.1'),
         port: parseInt(getOrDefault('APP_PORT', '9898'), 10),
         url: getOrDefault(
             'APP_URL',
             `http://${getOrDefault('APP_HOST', '127.0.0.1')}:${getOrDefault('APP_PORT', '9898')}`,
         ),
-        name: getOrDefault('APP_NAME', 'App'),
     },
 
     cors: {
