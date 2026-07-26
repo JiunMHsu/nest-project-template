@@ -1,9 +1,9 @@
 import { DataSource } from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
-process.loadEnvFile();
+import { config } from '@config/app.config';
 
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = config.env === 'production';
 
 /**
  * This data source is used for running migrations and other TypeORM CLI commands.
@@ -12,15 +12,15 @@ const isProduction = process.env.NODE_ENV === 'production';
  */
 const pg = new DataSource({
     type: 'postgres',
-    host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT || '5432', 10),
-    username: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+    host: config.database.host,
+    port: config.database.port,
+    username: config.database.user,
+    password: config.database.password,
+    database: config.database.name,
     entities: ['dist/**/**/entities/*.entity.js'],
     migrations: ['dist/core/database/migrations/*.js'],
-    synchronize: false,
-    dropSchema: false,
+    synchronize: config.database.synchronize,
+    dropSchema: config.database.dropSchema,
     migrationsRun: false,
     logging: !isProduction,
     namingStrategy: new SnakeNamingStrategy(),

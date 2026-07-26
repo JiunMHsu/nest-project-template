@@ -36,7 +36,7 @@ export const config = {
     database: {
         host: getOrDefault('DB_HOST', 'localhost'),
         port: parseInt(getOrDefault('DB_PORT', '5432'), 10),
-        username: getOrDefault('DB_USER', 'postgres'),
+        user: getOrDefault('DB_USER', 'postgres'),
         password: getOrDefault('DB_PASSWORD', 'postgres'),
         name: getOrDefault('DB_NAME', 'nest_template'),
         synchronize: getBooleanOrDefault('DB_SYNCHRONIZE', false),
