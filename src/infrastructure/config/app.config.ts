@@ -25,9 +25,13 @@ export const config = {
     },
 
     jwt: {
-        secret: getOrThrow('JWT_SECRET'),
+        get secret() {
+            return getOrThrow('JWT_SECRET');
+        },
+        get refreshSecret() {
+            return getOrThrow('JWT_REFRESH_SECRET');
+        },
         expiresIn: parseInt(getOrDefault('JWT_EXPIRES_IN', '3600'), 10),
-        refreshSecret: getOrThrow('JWT_REFRESH_SECRET'),
         refreshExpiresIn: parseInt(getOrDefault('JWT_REFRESH_EXPIRES_IN', '604800'), 10),
     },
 
