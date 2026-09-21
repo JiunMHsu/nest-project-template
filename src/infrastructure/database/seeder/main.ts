@@ -1,12 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
 
-import { SeederAppModule } from './seeder-app.module';
+import { SeederModule } from './seeder.module';
 import { SeederService } from './seeder.service';
 import { SeedOptions } from './seeder.options';
 
 async function bootstrap() {
-    const app = await NestFactory.createApplicationContext(SeederAppModule, { logger: ['log', 'error', 'warn'] });
+    const app = await NestFactory.createApplicationContext(SeederModule, { logger: ['log', 'error', 'warn'] });
     const logger = new Logger('Seeder');
 
     const seeder = app.get(SeederService);
@@ -29,4 +29,4 @@ async function bootstrap() {
     }
 }
 
-bootstrap().then();
+void bootstrap();
