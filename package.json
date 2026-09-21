@@ -20,16 +20,16 @@
         "test:watch": "vitest",
         "test:cov": "vitest run --coverage",
         "test:debug": "vitest --inspect-brk --inspect --logHeapUsage --threads=false",
-        "seed": "pnpm run build && node dist/infrastructure/database/seeder/command.js",
-        "seed:clear": "pnpm run build && node dist/infrastructure/database/seeder/command.js --clear",
+        "seed": "pnpm run build && node dist/src/infrastructure/database/seeder/main.js",
+        "seed:clear": "pnpm run build && node dist/src/infrastructure/database/seeder/main.js --clear",
         "seed:dev": "pnpm run seed:clear",
         "seed:prod": "pnpm run seed",
-        "migration:gen": "pnpm run build && sh -c 'pnpm exec typeorm migration:generate src/infrastructure/database/migrations/$1 -d dist/infrastructure/database/postgres/postgres.datasource.js' --",
-        "migration:run": "pnpm run build && pnpm exec typeorm migration:run -d dist/infrastructure/database/postgres/postgres.datasource.js",
-        "migration:revert": "pnpm run build && pnpm exec typeorm migration:revert -d dist/infrastructure/database/postgres/postgres.datasource.js",
-        "migration:show": "pnpm run build && pnpm exec typeorm migration:show -d dist/infrastructure/database/postgres/postgres.datasource.js",
+        "migration:gen": "pnpm run build && sh -c 'pnpm exec typeorm migration:generate src/infrastructure/database/migrations/$1 -d dist/src/infrastructure/database/postgres/postgres.datasource.js' --",
+        "migration:run": "pnpm run build && pnpm exec typeorm migration:run -d dist/src/infrastructure/database/postgres/postgres.datasource.js",
+        "migration:revert": "pnpm run build && pnpm exec typeorm migration:revert -d dist/src/infrastructure/database/postgres/postgres.datasource.js",
+        "migration:show": "pnpm run build && pnpm exec typeorm migration:show -d dist/src/infrastructure/database/postgres/postgres.datasource.js",
         "migration:create": "sh -c 'pnpm exec typeorm migration:create src/infrastructure/database/migrations/$1' --",
-        "migration:drop": "pnpm run build && pnpm exec typeorm schema:drop -d dist/infrastructure/database/postgres/postgres.datasource.js"
+        "migration:drop": "pnpm run build && pnpm exec typeorm schema:drop -d dist/src/infrastructure/database/postgres/postgres.datasource.js"
     },
     "dependencies": {
         "@nestjs/axios": "^12.0.0",
