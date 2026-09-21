@@ -25,9 +25,13 @@ export const config = {
     },
 
     jwt: {
-        secret: getOrThrow('JWT_SECRET'),
+        get secret() {
+            return getOrThrow('JWT_SECRET');
+        },
+        get refreshSecret() {
+            return getOrThrow('JWT_REFRESH_SECRET');
+        },
         expiresIn: parseInt(getOrDefault('JWT_EXPIRES_IN', '3600'), 10),
-        refreshSecret: getOrThrow('JWT_REFRESH_SECRET'),
         refreshExpiresIn: parseInt(getOrDefault('JWT_REFRESH_EXPIRES_IN', '604800'), 10),
     },
 
@@ -36,7 +40,7 @@ export const config = {
     database: {
         host: getOrDefault('DB_HOST', 'localhost'),
         port: parseInt(getOrDefault('DB_PORT', '5432'), 10),
-        user: getOrDefault('DB_USER', 'postgres'),
+        username: getOrDefault('DB_USERNAME', 'postgres'),
         password: getOrDefault('DB_PASSWORD', 'postgres'),
         name: getOrDefault('DB_NAME', 'nest_template'),
         synchronize: getBooleanOrDefault('DB_SYNCHRONIZE', false),

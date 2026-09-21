@@ -1,18 +1,10 @@
 import { Module } from '@nestjs/common';
-import { PostgresConfigService } from './postgres/postgres-config.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
+
+import { dataSourceOptions } from './postgres';
 import { SeederModule } from './seeder/seeder.module';
 
 @Module({
-    imports: [
-        TypeOrmModule.forRootAsync({
-            imports: [ConfigModule],
-            useClass: PostgresConfigService,
-        }),
-
-        SeederModule,
-    ],
-    providers: [PostgresConfigService],
+    imports: [TypeOrmModule.forRoot({ ...dataSourceOptions, autoLoadEntities: true })],
 })
 export class DatabaseModule {}

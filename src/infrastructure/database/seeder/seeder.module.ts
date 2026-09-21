@@ -1,7 +1,11 @@
 import { Module } from '@nestjs/common';
-import { SeederService } from './seeder.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { dataSourceOptions } from '@database/postgres';
+import { SeederService } from '@database/seeder/seeder.service';
 
 @Module({
+    imports: [TypeOrmModule.forRoot({ ...dataSourceOptions, autoLoadEntities: true })],
     providers: [SeederService],
     exports: [SeederService],
 })
