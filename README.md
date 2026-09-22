@@ -1,8 +1,8 @@
 # NestJS Project Template
 
-A production-ready NestJS template with built-in utilities for querying, pagination, sorting, date handling, and more.
-Designed to provide a consistent, well-tested foundation so new features can be built without re-solving the same
-infrastructure problems.
+A NestJS starting point with a small set of framework-agnostic building blocks: paging, sorting, filtering, and a few
+entity/DTO base classes. The goal is to drop in a feature module and get consistent, documented, paginated endpoints
+without re-solving the same plumbing.
 
 ## Stack
 
@@ -10,9 +10,9 @@ infrastructure problems.
 | ---------- | ----------------------------------- |
 | Framework  | NestJS 11                           |
 | Language   | TypeScript 6                        |
-| Database   | PostgreSQL + TypeORM 0.3            |
+| Database   | PostgreSQL + TypeORM                |
 | Validation | class-validator + class-transformer |
-| Date/Time  | Luxon                               |
+| Docs       | Swagger (`@nestjs/swagger`)         |
 | Testing    | Vitest                              |
 | Build      | SWC                                 |
 
@@ -23,19 +23,24 @@ infrastructure problems.
 ```
 src/
 ├── commons/
-│   ├── abstracts/          # Base entity and response DTO classes
-│   ├── constants/          # App-wide constants (timezone, etc.)
-│   ├── decorators/         # Swagger & request/response logging helpers
-│   ├── filters/            # Exception filters
-│   ├── guards/             # Auth guards
+│   ├── decorators/         # @NamedProperty, request/response logging
+│   ├── guards/             # JwtAuthGuard
 │   ├── interceptors/       # Request/response logging interceptor
-│   ├── querying/           # Query builder, pagination, sorting, filter DTOs
-│   ├── transformers/       # class-transformer decorators
-│   └── utils/              # Date, enum, entity, and random-string utilities
-├── features/               # Domain feature modules
+│   ├── models/             # PersistentEntity, EntityDetails
+│   └── utils/              # Date, entity, enum, random-string, validation factory
+├── libs/
+│   ├── filtering/core/     # EntityFilter, DateRange
+│   └── paging/
+│       ├── core/           # PageRequest, Sort/Order/Direction, Page/Slice
+│       ├── http/           # @Paginate, PageResponse, @ApiPaginatedResponse, sort parsers
+│       └── typeorm/        # paginate(), applySort()
+├── features/               # Domain feature modules (empty)
 ├── health/                 # Health check endpoint
-└── infrastructure/         # Config, database, logger, migrations
+└── infrastructure/         # Config, database, datasource, migrations, seeder
 ```
+
+`commons/` holds Nest-coupled helpers. `libs/` holds self-contained packages — `core` has no framework dependency,
+`http` is the Nest/Swagger layer, `typeorm` is the persistence layer.
 
 ---
 
@@ -49,29 +54,31 @@ Copy `.env.schema` to `.env` and fill in your values:
 cp .env.schema .env
 ```
 
-| Variable                 | Default                        | Description                                                                |
-| ------------------------ | ------------------------------ | -------------------------------------------------------------------------- |
-| `NODE_ENV`               | `development`                  | Runtime environment (`development`, `production`, `test`)                  |
-| `LOG_LEVEL`              | `log`                          | Minimum logger level (`verbose`, `debug`, `log`, `warn`, `error`, `fatal`) |
-| `APP_NAME`               | `App`                          | Application name (used as the logger context)                              |
-| `APP_HOST`               | `127.0.0.1`                    | Server bind address                                                        |
-| `APP_PORT`               | `9898`                         | Server port                                                                |
-| `APP_URL`                | `http://<APP_HOST>:<APP_PORT>` | Public base URL of the app                                                 |
-| `CORS_ORIGINS`           | `http://localhost:5173`        | Comma-separated list of allowed CORS origins                               |
-| `JWT_SECRET`             | — (required)                   | Secret for access tokens                                                   |
-| `JWT_EXPIRES_IN`         | `3600`                         | Access token lifetime in seconds                                           |
-| `JWT_REFRESH_SECRET`     | — (required)                   | Secret for refresh tokens                                                  |
-| `JWT_REFRESH_EXPIRES_IN` | `604800`                       | Refresh token lifetime in seconds                                          |
-| `HASH_SALT`              | `10`                           | bcrypt salt rounds                                                         |
-| `DB_HOST`                | `localhost`                    | PostgreSQL host                                                            |
-| `DB_PORT`                | `5432`                         | PostgreSQL port                                                            |
-| `DB_USER`                | `postgres`                     | PostgreSQL user                                                            |
-| `DB_PASSWORD`            | `postgres`                     | PostgreSQL password                                                        |
-| `DB_NAME`                | `nest_template`                | PostgreSQL database name                                                   |
-| `DB_SYNCHRONIZE`         | `false`                        | TypeORM auto-sync schema (keep `false` outside local dev)                  |
-| `DB_DROP_SCHEMA`         | `false`                        | Drop the schema on connection (destructive — local dev only)               |
-| `ADMIN_EMAIL`            | `admin@admin.com`              | Seed admin account email                                                   |
-| `ADMIN_PASSWORD`         | `admin`                        | Seed admin account password                                                |
+Config is read once at startup in `src/infrastructure/config/app.config.ts` and exported as a plain `config` object —
+there is no `ConfigService` indirection.
+
+| Variable                 | Default                        | Description                                                                          |
+| ------------------------ | ------------------------------ | ------------------------------------------------------------------------------------ |
+| `NODE_ENV`               | `development`                  | Runtime environment (`development`, `production`, `test`)                            |
+| `APP_NAME`               | `App`                          | Application name                                                                     |
+| `APP_HOST`               | `127.0.0.1`                    | Server bind address                                                                  |
+| `APP_PORT`               | `9898`                         | Server port                                                                          |
+| `APP_URL`                | `http://<APP_HOST>:<APP_PORT>` | Public base URL of the app                                                           |
+| `CORS_ORIGINS`           | `http://localhost:5173`        | Comma-separated allowed origins, parsed into `config.cors.origins` (not wired up yet) |
+| `JWT_SECRET`             | — (required on use)            | Secret for access tokens; throws only when actually read                             |
+| `JWT_EXPIRES_IN`         | `3600`                         | Access token lifetime in seconds                                                     |
+| `JWT_REFRESH_SECRET`     | — (required on use)            | Secret for refresh tokens; throws only when actually read                            |
+| `JWT_REFRESH_EXPIRES_IN` | `604800`                       | Refresh token lifetime in seconds                                                    |
+| `HASH_SALT`              | `10`                           | bcrypt salt rounds                                                                   |
+| `DB_HOST`                | `localhost`                    | PostgreSQL host                                                                      |
+| `DB_PORT`                | `5432`                         | PostgreSQL port                                                                      |
+| `DB_USERNAME`            | `postgres`                     | PostgreSQL user                                                                      |
+| `DB_PASSWORD`            | `postgres`                     | PostgreSQL password                                                                  |
+| `DB_NAME`                | `nest_template`                | PostgreSQL database name                                                             |
+| `DB_SYNCHRONIZE`         | `false`                        | TypeORM auto-sync schema — ignored in production                                     |
+| `DB_DROP_SCHEMA`         | `false`                        | Drop the schema on connection — ignored in production                                |
+| `ADMIN_EMAIL`            | `admin@admin.com`              | Seed admin account email                                                             |
+| `ADMIN_PASSWORD`         | `admin`                        | Seed admin account password                                                          |
 
 ### 2. Install dependencies
 
@@ -89,11 +96,14 @@ pnpm run dev
 pnpm run build && pnpm run prod
 ```
 
+Routes are served under the `api` global prefix; Swagger UI is at `/api/docs`.
+
 ---
 
 ## Database
 
-The database module is included but commented out in `InfrastructureModule` — enable it when ready:
+`DatabaseModule` is present but commented out in `InfrastructureModule` — uncomment it once you have a database to
+connect to:
 
 ```ts
 // src/infrastructure/infrastructure.module.ts
@@ -107,11 +117,18 @@ import { DatabaseModule } from '@infrastructure/database/database.module';
 })
 ```
 
+The data source lives in `src/infrastructure/database/postgres/postgres.datasource.ts`. It uses
+`SnakeNamingStrategy` (camelCase properties → snake_case columns), `useUTC: true`, and resolves entities and
+migrations from `dist/`, so all CLI scripts build first.
+
 ### Migrations
 
 ```bash
 # Generate a migration from entity changes
 MIGRATION_NAME=migration-name pnpm run migration:gen
+
+# Create an empty migration
+MIGRATION_NAME=migration-name pnpm run migration:create
 
 # Run pending migrations
 pnpm run migration:run
@@ -121,9 +138,15 @@ pnpm run migration:revert
 
 # Show migration status
 pnpm run migration:show
+
+# Drop the whole schema (destructive)
+pnpm run migration:drop
 ```
 
 ### Seeding
+
+`SeederService` ships with empty `clear()` and `seed()` methods — fill them in per project. The seeder runs as its own
+Nest application context, independent of `DatabaseModule`.
 
 ```bash
 # Run seeders
@@ -133,360 +156,24 @@ pnpm run seed
 pnpm run seed:clear
 ```
 
+Seed arguments are parsed by `SeedOptions`: `--clear`, `--superuser-email=`, `--superuser-password=`.
+
 ---
 
 ## Testing
 
 ```bash
-# All tests
+# All suites
 pnpm test
 
-# Unit tests only
 pnpm run test:unit
-
-# Integration tests only
 pnpm run test:integration
-
-# E2E tests only
 pnpm run test:e2e
 
-# Watch mode
 pnpm run test:watch
-
-# Coverage
 pnpm run test:cov
 ```
 
-Tests live in `test/unit/`, `test/integration/`, and `test/e2e/` and mirror the `src/` structure.
-
----
-
-## Commons — Built-in Utilities
-
-### QueryBuilder
-
-A fluent wrapper around TypeORM's `SelectQueryBuilder` that adds field whitelisting, null-aware filters, automatic
-soft-delete filtering, and integrated pagination.
-
-All active-record queries automatically exclude soft-deleted rows (`deletedAt IS NULL`). All filter methods are
-chainable and skip `undefined` values, making them safe to call directly with optional DTO fields.
-
-```typescript
-const results = await new QueryBuilder(
-    repo.createQueryBuilder('u'),
-    'u',
-    sorting.getCriteria(), // from @Sorting()
-    ['name', 'email', 'status'], // allowed filter fields (optional)
-)
-    .withDeleted(filter.deleted)
-    .equals('u.status', filter.status)
-    .contains('u.name', filter.search)
-    .between('u.createdAt', filter.creationDateRange)
-    .between('u.updatedAt', filter.updateDateRange)
-    .in('u.roleId', filter.roleIds)
-    .getPage(paging); // or .getMany()
-```
-
-**Filter methods:**
-
-| Method                              | SQL equivalent             | Notes                                                    |
-| ----------------------------------- | -------------------------- | -------------------------------------------------------- |
-| `.equals(field, value)`             | `= value` / `IS NULL`      | Null produces `IS NULL`                                  |
-| `.notEquals(field, value)`          | `!= value` / `IS NOT NULL` | Null produces `IS NOT NULL`                              |
-| `.greaterThan(field, value)`        | `> value`                  |                                                          |
-| `.lessThan(field, value)`           | `< value`                  |                                                          |
-| `.greaterThanOrEqual(field, value)` | `>= value`                 |                                                          |
-| `.lessThanOrEqual(field, value)`    | `<= value`                 |                                                          |
-| `.like(field, pattern)`             | `LIKE pattern`             | Raw pattern — caller places `%` / `_` wildcards          |
-| `.startsWith(field, pattern)`       | `LIKE 'pattern%'`          | Auto-escapes `%` and `_` in pattern                      |
-| `.endsWith(field, pattern)`         | `LIKE '%pattern'`          | Auto-escapes `%` and `_` in pattern                      |
-| `.contains(field, pattern)`         | `LIKE '%pattern%'`         | Auto-escapes `%` and `_` in pattern                      |
-| `.in(field, values)`                | `IN (...)`                 | Empty array → `1=0` (zero results, not all results)      |
-| `.between(field, from, to)`         | `>= from AND <= to`        | Either bound may be omitted                              |
-| `.between(field, DateRange)`        | `>= from AND <= to`        | Accepts a `DateRange` object directly                    |
-| `.withDeleted(flag?)`               | skips `deletedAt IS NULL`  | Pass `filter.deleted`; defaults to `true` if no argument |
-
----
-
-### Pagination
-
-**`PageRequest`** holds validated pagination parameters. Pages are 0-indexed.
-
-```typescript
-const paging = new PageRequest(0, 20); // page, size
-// paging.offset → 0  (ready for TypeORM's .skip())
-```
-
-Constraints: `page >= 0`, `1 <= size <= 100`. Constructor throws on violation.
-
-**`@Paging()`** — param decorator that parses `?page=` and `?size=` from the request. Non-numeric values fall back to
-defaults (`page=0`, `size=20`). Invalid values throw `BadRequestException`.
-
-```typescript
-@Get()
-findAll(@Paging() paging: PageRequest) {
-    ...
-}
-// GET /items?page=1&size=10
-```
-
----
-
-**`PageResponse<T>`** is the standard paginated response shape.
-
-```typescript
-// { page, size, total, totalPages, data: T[] }
-const page = await queryBuilder.getPage(paging);
-
-// Synchronous item mapping
-const dto = page.transform(entity => new EntityDto(entity));
-
-// Async item mapping (runs in parallel)
-const enriched = await page.transformAsync(async e => enrich(e));
-
-// Get a PageRequest for the next page (null if on the last page)
-const next = page.getNextPageRequest();
-```
-
-**`@ApiPaginatedResponse(Dto)`** — Swagger decorator for paginated endpoints:
-
-```typescript
-@ApiPaginatedResponse(ItemDto)
-@Get()
-findAll(
-    @Paging() paging: PageRequest
-): Promise<PageResponse<ItemDto>> { ... }
-```
-
----
-
-### Sorting
-
-**`@Sorting(validFields)`** — param decorator that parses one or more `?sortBy=` values.
-
-Format: `sortBy=field,direction` — direction defaults to `ASC` if omitted.
-Fields `id`, `createdAt`, and `updatedAt` are always allowed.
-Invalid fields throw `BadRequestException`.
-
-```typescript
-@Get()
-findAll(
-    @Sorting(['name', 'status'])
-    sorting: SortRequest
-) {
-    const criteria = sorting.getCriteria();
-    // Pass directly to QueryBuilder:
-    new QueryBuilder(qb, 'u', criteria)
-    ...
-}
-// GET /items?sortBy=name,ASC&sortBy=createdAt,DESC
-```
-
----
-
-### Query Params
-
-**`@QueryParams()`** — param decorator that parses, transforms, and validates query parameters into a typed DTO.
-Comma-separated string values are automatically split into arrays. Invalid input throws `BadRequestException`.
-
-```typescript
-@Get()
-    findAll(@QueryParams()
-    filter: ItemFilterDto
-) {
-    ...
-}
-// GET /items?status=active&tags=a,b,c
-// → filter.tags = ['a', 'b', 'c']
-```
-
----
-
-### EntitySpecification
-
-Abstract base class for filter DTOs. Provides out of the box:
-
-| Field           | Type      | Description                                          |
-| --------------- | --------- | ---------------------------------------------------- |
-| `id`            | `string`  | Filter by exact UUID                                 |
-| `createdAfter`  | `Date`    | Lower bound on `createdAt` (Buenos Aires local time) |
-| `createdBefore` | `Date`    | Upper bound on `createdAt` (Buenos Aires local time) |
-| `updatedAfter`  | `Date`    | Lower bound on `updatedAt` (Buenos Aires local time) |
-| `updatedBefore` | `Date`    | Upper bound on `updatedAt` (Buenos Aires local time) |
-| `deleted`       | `boolean` | When `true`, bypasses the `deletedAt IS NULL` gate   |
-
-Date fields use `@TransformToUTC()` — clients send Buenos Aires local time, the DTO receives UTC.
-
-Two getters compose the flat date fields into `DateRange` objects for use with `QueryBuilder.between()`:
-
-```typescript
-filter.creationDateRange; // → { from: createdAfter, to: createdBefore }
-filter.updateDateRange; // → { from: updatedAfter, to: updatedBefore }
-```
-
-```typescript
-export class ItemFilterDto extends EntitySpecification {
-    @IsOptional()
-    @IsString()
-    name?: string;
-}
-
-// In service:
-queryBuilder
-    .withDeleted(filter.deleted)
-    .between('u.createdAt', filter.creationDateRange)
-    .between('u.updatedAt', filter.updateDateRange);
-```
-
----
-
-### Base Classes
-
-**`PersistentEntity`** — abstract TypeORM entity with standard audit columns:
-
-| Column      | Type                | Description                 |
-| ----------- | ------------------- | --------------------------- |
-| `id`        | `uuid`              | Primary key, auto-generated |
-| `createdAt` | `timestamp`         | Set on insert               |
-| `updatedAt` | `timestamp`         | Updated automatically       |
-| `deletedAt` | `timestamp \| null` | Soft-delete timestamp       |
-
-```typescript
-entity.isActive(); // → true when deletedAt is null
-```
-
-**`EntityDetails`** — abstract base DTO for API responses. Converts UTC timestamps from the database to Buenos Aires
-local time ISO strings. `deletedAt` is omitted from the JSON response when the entity is not deleted.
-
-```typescript
-export class ItemDto extends EntityDetails {
-    constructor(entity: Item) {
-        super(entity);
-        this.name = entity.name;
-    }
-
-    name: string;
-}
-```
-
----
-
-### DateTime
-
-**`DateConverter.toLocalISO(date)`** — converts a UTC `Date` to an ISO 8601 string in Buenos Aires time (
-`America/Argentina/Buenos_Aires`, UTC-3). Returns `undefined` for `null`/`undefined` input.
-
-```typescript
-DateConverter.toLocalISO(new Date('2024-07-01T12:00:00Z'));
-// → '2024-07-01T09:00:00.000-03:00'
-```
-
-**`@TransformToUTC()`** — `class-transformer` property decorator. Accepts a bare ISO 8601 string (no timezone suffix)
-and converts it from Buenos Aires local time to a UTC `Date`. Strings with timezone information (`Z`, `±HH:MM`) are
-rejected.
-
-```typescript
-class FilterDto {
-    @TransformToUTC()
-    @IsOptional()
-    createdAfter?: Date;
-}
-
-// ?createdAfter=2024-07-01T09:00:00  →  2024-07-01T12:00:00.000Z
-```
-
----
-
-### RandomString
-
-```typescript
-RandomString.generateSecure(32); // crypto.randomBytes — safe for tokens/passwords
-RandomString.generateAlphanumeric(); // letters + digits, Math.random
-RandomString.generateAlphabetic(); // letters only
-RandomString.generateNumeric(6); // digits only → "482957"
-RandomString.generate({ with: ['uppercase', 'digits'], length: 8 });
-```
-
-> Only `generateSecure()` is cryptographically safe. Use it for anything security-sensitive.
-
----
-
-### Entity Utilities
-
-**`updateEntity(entity, updates, options?)`** — applies a partial update object to an entity, skipping `undefined`
-values and, by default, `null` values. Intended for PATCH handlers.
-
-```typescript
-// Only provided fields are written; undefined = skip, null = skip by default
-updateEntity(user, { name: 'Jane', phone: undefined });
-
-// Allow explicitly nulling a field
-updateEntity(user, { managerId: null }, { allowNull: ['managerId'] });
-```
-
----
-
-### Enum Utilities
-
-```typescript
-enum Status {
-    Active = 'active',
-    Inactive = 'inactive',
-}
-
-getEnumValueByString(Status, 'active'); // → 'active'
-getEnumValueByString(Status, 'ACTIVE'); // → undefined  (case-sensitive)
-getEnumValueByString(Status, undefined); // → undefined
-
-// Map between enums with matching values
-convertEnum(SourceEnum.X, TargetEnum);
-```
-
----
-
-## Logging
-
-The app uses NestJS's `ConsoleLogger`, configured once at startup from the environment and installed as the global
-logger in `main.ts` (`app.useLogger(...)`). Every `new Logger(context)` in the codebase then routes through it —
-respecting the configured level and emitting timestamps.
-
-- **`LOG_LEVEL`** sets the minimum level; anything below it is suppressed (e.g. `warn` hides `log`, `debug`, `verbose`).
-- **`APP_NAME`** is used as the default logger context.
-
-### Request/response logging
-
-Decorators in `@commons/decorators/log.decorator.ts` attach a logging interceptor to a route. Sensitive keys
-(`authorization`, `apikey`, `secret`) are redacted from the logged payloads.
-
-```typescript
-import { LogReqRes, LogRequest, LogResponse } from '@commons/decorators/log.decorator';
-
-@LogReqRes()   // logs both request (body, query, params) and response
-@LogRequest()  // logs the request only
-@LogResponse() // logs the response only
-@Get()
-findAll() { ... }
-```
-
----
-
-## Auth
-
-A `JwtAuthGuard` wrapping Passport's JWT strategy is included at `src/commons/guards/jwt-auth.guard.ts`. JWT
-configuration (`secret`, `expiresIn`, `refreshSecret`, `refreshExpiresIn`) is loaded from environment variables via the
-app config.
-
----
-
-## Path Aliases
-
-The following aliases are configured in both `tsconfig.json` and `vitest.config.unit.ts`:
-
-| Alias             | Path                  |
-| ----------------- | --------------------- |
-| `@src`            | `src/`                |
-| `@commons`        | `src/commons/`        |
-| `@infrastructure` | `src/infrastructure/` |
-| `@integrations`   | `src/integrations/`   |
-| `@features`       | `src/features/`       |
-| `@test`           | `test/`               |
+Tests live in `test/unit/`, `test/integration/`, and `test/e2e/`, each with its own Vitest config that shares
+`vitest.config.ts`. All suites run with `passWithNoTests`. Integration tests can bootstrap a real module through
+`createIntegrationTestModule()` in `test/utils/helper.ts`.
