@@ -20,6 +20,7 @@
             "@src/*": ["./src/*"],
             "@commons/*": ["./src/commons/*"],
             "@infrastructure/*": ["./src/infrastructure/*"],
+            "@libs/*": ["./src/libs/*"],
             "@config/*": ["./src/infrastructure/config/*"],
             "@database/*": ["./src/infrastructure/database/*"],
             "@integrations/*": ["./src/integrations/*"],
