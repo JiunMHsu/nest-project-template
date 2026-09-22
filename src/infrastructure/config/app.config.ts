@@ -6,7 +6,6 @@ if (existsSync('.env')) process.loadEnvFile();
 
 export const config = {
     env: getOrDefault<'development' | 'production' | 'test'>('NODE_ENV', 'development'),
-    logLevel: getOrDefault<'verbose' | 'debug' | 'log' | 'warn' | 'error' | 'fatal'>('LOG_LEVEL', 'log'),
 
     app: {
         name: getOrDefault('APP_NAME', 'App'),
