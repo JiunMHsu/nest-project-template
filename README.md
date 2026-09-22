@@ -333,3 +333,80 @@ const page = await paginate(qb, 'u', pageRequest);
 
 `@ApiPaginatedResponse(Dto)` documents the response, composing `PageResponse`'s schema with `content` typed as
 `Dto[]` — NestJS Swagger cannot infer that from the generic on its own.
+
+---
+
+## Filtering — `@libs/filtering`
+
+There is no query-builder wrapper. Filter DTOs describe what the caller may ask for; the service applies them with
+plain TypeORM. `EntityFilter` just covers the fields every entity has.
+
+### `EntityFilter`
+
+Abstract base for filter DTOs, bound to a route with a plain `@Query()` — the global `ValidationPipe` (`transform:
+true`) instantiates and validates it.
+
+| Query param      | Property        | Type      | Description                              |
+| ---------------- | --------------- | --------- | ---------------------------------------- |
+| `id`             | `id`            | `string`  | Filter by UUID                           |
+| `created_after`  | `createdAfter`  | `Date`    | Lower bound on `createdAt`               |
+| `created_before` | `createdBefore` | `Date`    | Upper bound on `createdAt`               |
+| `updated_after`  | `updatedAfter`  | `Date`    | Lower bound on `updatedAt`               |
+| `updated_before` | `updatedBefore` | `Date`    | Upper bound on `updatedAt`               |
+| `deleted`        | `deleted`       | `boolean` | Include soft-deleted rows. Default: no.  |
+
+Dates are standard ISO 8601 with an explicit offset or `Z` (`2024-01-01T00:00:00Z`) — no implicit local timezone
+anywhere in the API. `deleted` accepts the strings `'true'` / `'false'`; anything else becomes `undefined`.
+
+The query string stays flat rather than using bracket notation, because it reads better for API consumers. Two getters
+compose the flat bounds back into a `DateRange` for the query layer:
+
+```typescript
+filter.createdDateRange; // → { from: createdAfter, to: createdBefore }
+filter.updatedDateRange; // → { from: updatedAfter, to: updatedBefore }
+```
+
+### Extending it
+
+Use `@NamedPropertyOptional` for extra fields so the exposed name and the Swagger docs stay in one place:
+
+```typescript
+export class UserFilter extends EntityFilter {
+    @NamedPropertyOptional('last_name', { description: 'Partial match on last name' })
+    @IsOptional()
+    @IsString()
+    public lastName?: string;
+}
+```
+
+```typescript
+// service
+public async findAll(filter: UserFilter, pageRequest: PageRequest): Promise<Page<User>> {
+    const qb = this.userRepository.createQueryBuilder('u');
+
+    if (filter.id) qb.andWhere('u.id = :id', { id: filter.id });
+    if (filter.lastName) qb.andWhere('u.lastName ILIKE :lastName', { lastName: `%${filter.lastName}%` });
+
+    const { from, to } = filter.createdDateRange;
+    if (from) qb.andWhere('u.createdAt >= :from', { from });
+    if (to) qb.andWhere('u.createdAt <= :to', { to });
+
+    if (filter.deleted) qb.withDeleted();
+
+    return paginate(qb, 'u', pageRequest);
+}
+```
+
+Soft-delete filtering is TypeORM's own: entities extending `PersistentEntity` have a `@DeleteDateColumn`, so deleted
+rows are excluded unless the query opts in with `withDeleted()`.
+
+### `DateRange`
+
+```typescript
+interface DateRange {
+    from?: Date;
+    to?: Date;
+}
+```
+
+Both bounds optional — apply only the ones that are present.
