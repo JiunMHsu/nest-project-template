@@ -32,7 +32,7 @@ export async function paginate<T>(
     pageRequest: PageRequest,
 ): Promise<Page<T>> {
     applySort(qb, alias, pageRequest.sort);
-    qb.skip(pageRequest.offset).take(pageRequest.pageSize);
+    qb.skip(pageRequest.offset).take(pageRequest.size);
 
     const [content, totalElements] = await qb.getManyAndCount();
     return new Page(content, pageRequest, totalElements);

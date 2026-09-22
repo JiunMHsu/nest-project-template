@@ -13,23 +13,23 @@ export class PageResponse<T> {
     @NamedProperty('page', { description: 'The current page number (0-indexed)', example: 0 })
     public readonly page: number;
 
-    @NamedProperty('size', { description: 'The number of items per page', example: 20 })
-    public readonly size: number;
-
-    @NamedProperty('total_elements', { description: 'The total number of items available', example: 57 })
-    public readonly totalElements: number;
+    @NamedProperty('count', { description: 'The number of items per page', example: 20 })
+    public readonly count: number;
 
     @NamedProperty('total_pages', { description: 'The total number of pages available', example: 3 })
     public readonly totalPages: number;
+
+    @NamedProperty('total_count', { description: 'The total number of items available', example: 57 })
+    public readonly totalCount: number;
 
     @NamedProperty('is_last', { description: 'Whether this is the last page', example: false })
     public readonly isLast: boolean;
 
     private constructor(page: Page<T>) {
-        this.page = page.pageNumber;
-        this.size = page.pageSize;
-        this.totalElements = page.totalElements;
+        this.page = page.page;
+        this.count = page.count;
         this.totalPages = page.totalPages;
+        this.totalCount = page.totalCount;
         this.isLast = page.isLast();
         this.content = [...page.content];
     }

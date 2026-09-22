@@ -9,15 +9,15 @@ import { Sort } from '@libs/paging/core/sort';
  */
 export class Slice<T> {
     public readonly content: readonly T[];
-    public readonly pageNumber: number;
-    public readonly pageSize: number;
+    public readonly page: number;
+    public readonly count: number;
     public readonly sort: Sort;
     public readonly hasNext: boolean;
 
     public constructor(content: T[], pageable: PageRequest, hasNext: boolean) {
         this.content = content;
-        this.pageNumber = pageable.pageNumber;
-        this.pageSize = pageable.pageSize;
+        this.page = pageable.page;
+        this.count = pageable.size;
         this.sort = pageable.sort;
         this.hasNext = hasNext;
     }
@@ -27,7 +27,7 @@ export class Slice<T> {
     }
 
     public hasPrevious(): boolean {
-        return this.pageNumber > 0;
+        return this.page > 0;
     }
 
     public isFirst(): boolean {
@@ -41,17 +41,17 @@ export class Slice<T> {
     /** The `PageRequest` for the next page, or `undefined` if this is the last one. */
     public nextPageRequest(): PageRequest | undefined {
         if (!this.hasNext) return undefined;
-        return PageRequest.of(this.pageNumber + 1, this.pageSize, this.sort);
+        return PageRequest.of(this.page + 1, this.count, this.sort);
     }
 
     /** The `PageRequest` for the previous page, or `undefined` if this is the first one. */
     public previousPageRequest(): PageRequest | undefined {
         if (!this.hasPrevious()) return undefined;
-        return PageRequest.of(this.pageNumber - 1, this.pageSize, this.sort);
+        return PageRequest.of(this.page - 1, this.count, this.sort);
     }
 
     public map<U>(fn: (item: T) => U): Slice<U> {
-        const pageable = PageRequest.of(this.pageNumber, this.pageSize, this.sort);
+        const pageable = PageRequest.of(this.page, this.count, this.sort);
         return new Slice(this.content.map(fn), pageable, this.hasNext);
     }
 }
@@ -61,19 +61,19 @@ export class Slice<T> {
  * (e.g. "page 3 of 12", "57 results").
  */
 export class Page<T> extends Slice<T> {
-    public readonly totalElements: number;
+    public readonly totalCount: number;
 
-    public constructor(content: T[], pageable: PageRequest, totalElements: number) {
-        super(content, pageable, pageable.offset + content.length < totalElements);
-        this.totalElements = totalElements;
+    public constructor(content: T[], pageable: PageRequest, totalCount: number) {
+        super(content, pageable, pageable.offset + content.length < totalCount);
+        this.totalCount = totalCount;
     }
 
     public get totalPages(): number {
-        return this.pageSize === 0 ? 1 : Math.ceil(this.totalElements / this.pageSize);
+        return this.page === 0 ? 1 : Math.ceil(this.totalCount / this.count);
     }
 
     public override map<U>(fn: (item: T) => U): Page<U> {
-        const pageable = PageRequest.of(this.pageNumber, this.pageSize, this.sort);
-        return new Page(this.content.map(fn), pageable, this.totalElements);
+        const pageable = PageRequest.of(this.page, this.count, this.sort);
+        return new Page(this.content.map(fn), pageable, this.totalCount);
     }
 }
