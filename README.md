@@ -410,3 +410,148 @@ interface DateRange {
 ```
 
 Both bounds optional — apply only the ones that are present.
+
+---
+
+## Commons
+
+### `@NamedProperty` / `@NamedPropertyOptional`
+
+Combines `@Expose({ name })` with `@ApiProperty({ name })`, so a property's public name is declared once and applies
+to both serialization and Swagger. This is what keeps the wire format snake_case while the TypeScript stays camelCase.
+
+```typescript
+@NamedProperty('created_at', { description: 'Creation timestamp, UTC ISO 8601' })
+public readonly createdAt: string;
+```
+
+### `PersistentEntity`
+
+Abstract TypeORM entity with the standard audit columns.
+
+| Property    | Column       | Type                | Description                 |
+| ----------- | ------------ | ------------------- | --------------------------- |
+| `id`        | `id`         | `uuid`              | Primary key, auto-generated |
+| `createdAt` | `created_at` | `timestamp`         | Set on insert               |
+| `updatedAt` | `updated_at` | `timestamp`         | Updated automatically       |
+| `deletedAt` | `deleted_at` | `timestamp \| null` | Soft-delete timestamp       |
+
+```typescript
+entity.isActive; // getter → true when deletedAt is null
+```
+
+### `EntityDetails`
+
+Base response DTO mirroring `PersistentEntity`. Timestamps are serialized as UTC ISO 8601 strings, and `deleted_at`
+is omitted when the entity is not soft-deleted.
+
+```typescript
+export class UserDetails extends EntityDetails {
+    @NamedProperty('last_name')
+    public readonly lastName: string;
+
+    constructor(user: User) {
+        super(user);
+        this.lastName = user.lastName;
+    }
+}
+```
+
+### `DateConverter`
+
+```typescript
+DateConverter.toISO(new Date('2024-07-01T12:00:00Z')); // → '2024-07-01T12:00:00.000Z'
+DateConverter.toISO(null); // → undefined
+```
+
+Null-safe by design, so it drops straight onto optional fields like `deletedAt`.
+
+### `updateEntity`
+
+Applies a partial update to an entity, skipping `undefined` and — by default — `null`. Meant for PATCH handlers.
+
+```typescript
+updateEntity(user, { name: 'Jane', phone: undefined }); // name written, phone skipped
+
+updateEntity(user, { managerId: null }, { allowNull: ['managerId'] }); // explicitly cleared
+```
+
+### Enum utilities
+
+```typescript
+enum Status {
+    Active = 'active',
+    Inactive = 'inactive',
+}
+
+getEnumValueByString(Status, 'active'); // → 'active'
+getEnumValueByString(Status, 'ACTIVE'); // → undefined  (case-sensitive)
+getEnumValueByString(Status, undefined); // → undefined
+
+convertEnum(SourceEnum.Active, TargetEnum); // maps between enums with matching values
+```
+
+### `RandomString`
+
+```typescript
+RandomString.generateSecure(32); // crypto.randomBytes — safe for tokens/passwords
+RandomString.generateAlphanumeric(); // letters + digits, Math.random
+RandomString.generateAlphabetic(); // letters only
+RandomString.generateNumeric(6); // digits only → "482957"
+RandomString.generate({ with: ['uppercase', 'digits'], length: 8 });
+```
+
+> Only `generateSecure()` is cryptographically safe. Use it for anything security-sensitive.
+
+### `validationExceptionFactory`
+
+Installed on the global `ValidationPipe` in `main.ts`. Flattens nested `ValidationError` trees into a single list of
+messages, so a failed request returns every problem at once instead of just the top-level ones.
+
+---
+
+## Logging
+
+The app uses NestJS's default logger — there is no `LOG_LEVEL` variable and no custom logger installed. Use
+`new Logger(context)` per class as usual.
+
+### Request/response logging
+
+`LogInterceptor` logs a route's body, query, and params and/or its response. `authorization`, `apikey`, and `secret`
+keys are redacted at any depth of the payload. Attach it with the decorators in `@commons/decorators/log.decorator`:
+
+```typescript
+@LogReqRes()   // request and response
+@LogRequest()  // request only
+@LogResponse() // response only
+@Get()
+findAll() { ... }
+```
+
+---
+
+## Auth
+
+`JwtAuthGuard` (`@commons/guards/jwt-auth.guard`) wraps Passport's JWT strategy. The strategy itself is not included —
+add one per project. JWT settings (`secret`, `expiresIn`, `refreshSecret`, `refreshExpiresIn`) come from `config.jwt`;
+the two secrets are lazy getters that throw only when first read, so the template boots without them.
+
+---
+
+## Path Aliases
+
+Declared in `tsconfig.json`:
+
+| Alias             | Path                          |
+| ----------------- | ----------------------------- |
+| `@src`            | `src/`                        |
+| `@commons`        | `src/commons/`                |
+| `@libs`           | `src/libs/`                   |
+| `@infrastructure` | `src/infrastructure/`         |
+| `@config`         | `src/infrastructure/config/`  |
+| `@database`       | `src/infrastructure/database/`|
+| `@integrations`   | `src/integrations/`           |
+| `@features`       | `src/features/`               |
+| `@test`           | `test/`                       |
+
+Vitest resolves aliases separately, in `vitest.config.ts` — keep the two lists in sync when adding one.
