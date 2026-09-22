@@ -62,8 +62,9 @@ function applyPaginationDocs(sortParser: SortParser, target: object, propertyKey
                 required: false,
                 isArray: true,
                 type: String,
-                description: `Sort as 'field,DIRECTION' (direction defaults to ASC). Repeatable. 
-                              Allowed fields: ${allowedFields.join(', ')}`,
+                description:
+                    `Sort as 'field,DIRECTION' (direction defaults to ASC). Repeatable. ` +
+                    `Allowed fields: ${allowedFields.join(', ')}`,
                 enum: allowedFields.flatMap(field => [`${field},${Direction.ASC}`, `${field},${Direction.DESC}`]),
             }),
         );
