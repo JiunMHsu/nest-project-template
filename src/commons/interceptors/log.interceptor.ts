@@ -13,20 +13,40 @@ const REDACTED_KEYS = new Set(['authorization', 'apikey', 'secret']);
 
 const REDACTED = '[REDACTED]';
 
-function redact(value: unknown): unknown {
-    if (Array.isArray(value)) return value.map(redact);
-    if (value && typeof value === 'object') {
-        return Object.fromEntries(
-            Object.entries(value as Record<string, unknown>).map(([k, v]) =>
-                REDACTED_KEYS.has(k.toLowerCase()) ? [k, REDACTED] : [k, redact(v)],
-            ),
-        );
-    }
-    return value;
+const CIRCULAR = '[Circular]';
+const UNSERIALIZABLE = '[Unserializable]';
+
+/**
+ * Deep-copies `value` with sensitive keys masked.
+ *
+ * `ancestors` tracks the objects on the current branch so a cycle — common in
+ * TypeORM entities with bidirectional relations — is replaced rather than
+ * recursed into. Logging must never be able to fail the request it is logging.
+ */
+function redact(value: unknown, ancestors: WeakSet<object>): unknown {
+    if (!value || typeof value !== 'object') return value;
+    if (ancestors.has(value)) return CIRCULAR;
+
+    ancestors.add(value);
+    const redacted = Array.isArray(value)
+        ? value.map(item => redact(item, ancestors))
+        : Object.fromEntries(
+              Object.entries(value as Record<string, unknown>).map(([k, v]) =>
+                  REDACTED_KEYS.has(k.toLowerCase()) ? [k, REDACTED] : [k, redact(v, ancestors)],
+              ),
+          );
+    ancestors.delete(value);
+
+    return redacted;
 }
 
 function format(value: unknown) {
-    return JSON.stringify(redact(value), null, 2);
+    // A BigInt, or a getter that throws, must not escape into the request path.
+    try {
+        return JSON.stringify(redact(value, new WeakSet()), null, 2);
+    } catch {
+        return UNSERIALIZABLE;
+    }
 }
 
 function logRequest(logger: Logger, mode: LogMode, label: string, req: Request) {
