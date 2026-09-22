@@ -177,3 +177,159 @@ pnpm run test:cov
 Tests live in `test/unit/`, `test/integration/`, and `test/e2e/`, each with its own Vitest config that shares
 `vitest.config.ts`. All suites run with `passWithNoTests`. Integration tests can bootstrap a real module through
 `createIntegrationTestModule()` in `test/utils/helper.ts`.
+
+---
+
+## Paging & Sorting — `@libs/paging`
+
+Three layers, importable independently:
+
+| Import                 | Contains                                                       |
+| ---------------------- | -------------------------------------------------------------- |
+| `@libs/paging/core`    | `PageRequest`, `Sort`, `Order`, `Direction`, `Page`, `Slice`    |
+| `@libs/paging/http`    | `@Paginate`, `PageResponse`, `@ApiPaginatedResponse`, parsers   |
+| `@libs/paging/typeorm` | `paginate()`, `applySort()`                                     |
+
+`core` has no Nest or TypeORM dependency — it is plain value objects, safe to use and unit-test anywhere.
+
+### End to end
+
+```typescript
+// controller
+@Get()
+@ApiPaginatedResponse(UserDetails)
+public async findAll(
+    @Query() filter: UserFilter,
+    @Paginate({ last_name: 'lastName', created_at: 'createdAt' }) pageRequest: PageRequest,
+): Promise<PageResponse<UserDetails>> {
+    const page = await this.userService.findAll(filter, pageRequest);
+    return PageResponse.from(page.map(user => new UserDetails(user)));
+}
+
+// service
+public async findAll(filter: UserFilter, pageRequest: PageRequest): Promise<Page<User>> {
+    const qb = this.userRepository.createQueryBuilder('u');
+    if (filter.deleted) qb.withDeleted();
+    return paginate(qb, 'u', pageRequest);
+}
+```
+
+```
+GET /api/users?page=1&size=10&sort=last_name,ASC&sort=created_at,DESC
+```
+
+### `PageRequest`
+
+Immutable, 0-indexed, and carries its own `Sort`. Built through `PageRequest.of()` — the constructor is private.
+
+```typescript
+const request = PageRequest.of(0, 20, Sort.by('lastName'));
+
+request.offset; // → 0, ready for TypeORM's .skip()
+request.next(); // → PageRequest.of(1, 20, sort)
+request.previousOrFirst();
+request.first();
+request.withSort(Sort.of(Order.desc('createdAt')));
+request.hasPrevious();
+```
+
+It rejects `page < 0` and `size < 1`. An upper bound on `size` is deliberately *not* enforced here — that is endpoint
+policy, so it lives in the HTTP layer (`@Paginate` caps it at 100).
+
+### `Sort` / `Order` / `Direction`
+
+Immutable, ordered sort instructions. `Order` is built through `Order.asc()` / `Order.desc()`.
+
+```typescript
+Sort.by('lastName', 'firstName'); // both ascending
+Sort.of(Order.desc('createdAt'), Order.asc('name'));
+Sort.unsorted();
+
+Sort.by('lastName').and(Sort.of(Order.desc('createdAt'))); // lastName ASC, then createdAt DESC
+
+sort.isSorted();
+sort.toArray(); // readonly Order[]
+for (const order of sort) { /* Sort is iterable */ }
+```
+
+### `Page` / `Slice`
+
+`Slice<T>` is a page of results that only knows whether another page exists — fetch `size + 1` rows and pass whether
+the extra row showed up. No `COUNT(*)` query.
+
+`Page<T>` extends it with a total count, for "page 3 of 12 / 57 results" style navigation.
+
+```typescript
+const slice = new Slice(rows, pageRequest, hasNext);
+const page = new Page(rows, pageRequest, totalCount);
+
+page.content; // readonly T[]
+page.page; // current page index
+page.count; // page size
+page.sort;
+page.totalCount;
+page.totalPages;
+
+page.hasContent();
+page.hasNext;
+page.hasPrevious();
+page.isFirst();
+page.isLast();
+
+page.nextPageRequest(); // PageRequest | undefined
+page.previousPageRequest(); // PageRequest | undefined
+
+page.map(user => new UserDetails(user)); // Page<UserDetails>, metadata preserved
+```
+
+### `@Paginate(sortableFields?)`
+
+Param decorator that parses `page`, `size`, and `sort` into a `PageRequest`, and registers the matching Swagger
+`@ApiQuery` docs on the route.
+
+- `page` defaults to `0`, `size` to `20`; non-numeric values fall back to those defaults.
+- `size` above `100` throws `BadRequestException`.
+- `sort` is repeatable and takes `field,DIRECTION`; direction defaults to `ASC`.
+- Sorting by a field outside the whitelist throws `BadRequestException`.
+
+The whitelist accepts either form:
+
+```typescript
+// exposed name == entity property
+@Paginate(['name', 'createdAt'])
+
+// exposed name mapped to entity property — keeps the public API snake_case
+@Paginate({ last_name: 'lastName', created_at: 'createdAt' })
+```
+
+Passing nothing (or an empty list) means nothing is sortable, and no `sort` query param is documented.
+
+### `paginate()` / `applySort()`
+
+TypeORM bindings. `applySort()` turns a `Sort` into `ORDER BY` clauses prefixed with the query alias; `paginate()`
+applies the sort plus `skip`/`take`, runs `getManyAndCount()`, and wraps the result in a `Page`.
+
+```typescript
+const page = await paginate(qb, 'u', pageRequest);
+```
+
+> `skip`/`take` can miscount when the query joins a to-many relation. Split the query or use a subquery in that case.
+
+### `PageResponse<T>` and `@ApiPaginatedResponse(Dto)`
+
+`PageResponse` is the wire shape — a Swagger-annotated DTO, kept separate from the internal `Page`. Build it with
+`PageResponse.from(page)`.
+
+```jsonc
+{
+    "content": [],
+    "page": 0,
+    "count": 20,
+    "total_pages": 3,
+    "total_count": 57,
+    "is_last": false
+}
+```
+
+`@ApiPaginatedResponse(Dto)` documents the response, composing `PageResponse`'s schema with `content` typed as
+`Dto[]` — NestJS Swagger cannot infer that from the generic on its own.
