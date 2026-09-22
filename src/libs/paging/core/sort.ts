@@ -1,6 +1,6 @@
 export enum Direction {
-    ASC = 'ASC',
-    DESC = 'DESC',
+    ASC = 'asc',
+    DESC = 'desc',
 }
 
 /**
@@ -18,6 +18,11 @@ export class Order {
 
     public static desc(property: string): Order {
         return new Order(property, Direction.DESC);
+    }
+
+    /** Builds an order in the given direction, defaulting to ascending. */
+    public static of(property: string, direction?: Direction): Order {
+        return new Order(property, direction ?? Direction.ASC);
     }
 }
 

@@ -1,5 +1,7 @@
-import { Direction, Order, Sort } from '@libs/paging/core';
 import { BadRequestException } from '@nestjs/common';
+
+import { getEnumValueByString } from '@commons/utils/enum.util';
+import { Direction, Order, Sort } from '@libs/paging/core';
 
 export abstract class SortParser {
     public abstract parse(raw: unknown): Sort;
@@ -18,7 +20,8 @@ export abstract class SortParser {
             // Own properties only: inherited keys such as 'constructor' are truthy on a plain object.
             const column = Object.prototype.hasOwnProperty.call(fields, property) ? fields[property] : undefined;
             if (!column) throw this.buildError(property, Object.keys(fields));
-            return rawDirection?.toUpperCase() === (Direction.DESC as string) ? Order.desc(column) : Order.asc(column);
+            // `?sort=name` carries no direction at all, so this stays optional.
+            return Order.of(column, getEnumValueByString(Direction, rawDirection?.toLowerCase()));
         });
 
         return Sort.of(...orders);

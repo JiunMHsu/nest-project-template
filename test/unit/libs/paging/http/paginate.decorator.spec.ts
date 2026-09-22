@@ -153,10 +153,10 @@ describe('Paginate', () => {
 
         it('should offer both directions for each sortable field', () => {
             expect(apiQueriesOf('named').find(query => query.name === 'sort')?.schema?.items?.enum).toEqual([
-                'last_name,ASC',
-                'last_name,DESC',
-                'created_at,ASC',
-                'created_at,DESC',
+                'last_name,asc',
+                'last_name,desc',
+                'created_at,asc',
+                'created_at,desc',
             ]);
         });
 
