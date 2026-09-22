@@ -15,8 +15,8 @@ describe('LogInterceptor', () => {
 
     beforeEach(() => {
         logged = [];
-        vi.spyOn(Logger.prototype, 'log').mockImplementation((message: unknown) => {
-            logged.push(String(message));
+        vi.spyOn(Logger.prototype, 'log').mockImplementation((message: string) => {
+            logged.push(message);
         });
     });
 

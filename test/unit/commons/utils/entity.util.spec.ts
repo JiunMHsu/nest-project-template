@@ -46,7 +46,7 @@ describe('updateEntity', () => {
         ['an empty string', 'name', ''],
         ['false', 'active', false],
     ])('should apply %s, which is defined but falsy', (_label, field, value) => {
-        const updated = updateEntity(user(), { [field]: value } as Partial<User>);
+        const updated = updateEntity(user(), { [field]: value });
 
         expect(updated[field as keyof User]).toBe(value);
     });

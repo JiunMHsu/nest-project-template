@@ -47,7 +47,9 @@ describe('validationExceptionFactory', () => {
 
     it('should collect from deeply nested children', () => {
         const errors = [
-            error('order', undefined, [error('items', undefined, [error('sku', { isString: 'sku must be a string' })])]),
+            error('order', undefined, [
+                error('items', undefined, [error('sku', { isString: 'sku must be a string' })]),
+            ]),
         ];
 
         expect(messagesOf(errors)).toEqual(['sku must be a string']);

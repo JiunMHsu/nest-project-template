@@ -38,9 +38,7 @@ describe('getEnumValueByString', () => {
     });
 
     it('should throw for a non-string rather than returning undefined', () => {
-        expect(() => getEnumValueByString(Status, null as unknown as string)).toThrow(
-            'Value is not a valid string: null',
-        );
+        expect(() => getEnumValueByString(Status, null)).toThrow('Value is not a valid string: null');
     });
 });
 
