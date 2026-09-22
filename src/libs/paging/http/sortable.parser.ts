@@ -15,10 +15,10 @@ export abstract class SortParser {
 
         const orders = values.map(value => {
             const [property, rawDirection] = value.split(',').map(part => part.trim());
-            if (!fields[property]) throw this.buildError(property, Object.keys(fields));
-            return rawDirection?.toUpperCase() === (Direction.DESC as string)
-                ? Order.desc(fields[property])
-                : Order.asc(fields[property]);
+            // Own properties only: inherited keys such as 'constructor' are truthy on a plain object.
+            const column = Object.prototype.hasOwnProperty.call(fields, property) ? fields[property] : undefined;
+            if (!column) throw this.buildError(property, Object.keys(fields));
+            return rawDirection?.toUpperCase() === (Direction.DESC as string) ? Order.desc(column) : Order.asc(column);
         });
 
         return Sort.of(...orders);
