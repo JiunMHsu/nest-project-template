@@ -23,7 +23,6 @@ classes. Drop in a feature module and get consistent, documented, paginated endp
 src/
 ├── commons/
 │   ├── decorators/         # @NamedProperty, request/response logging
-│   ├── guards/             # JwtAuthGuard
 │   ├── interceptors/       # Request/response logging interceptor
 │   ├── models/             # PersistentEntity, EntityDetails
 │   └── utils/              # Date, entity, enum, random-string, validation factory
@@ -480,14 +479,6 @@ render as `[Circular]`, anything else as `[Unserializable]` — so logging can n
 @Get()
 findAll() { ... }
 ```
-
----
-
-## Auth
-
-`JwtAuthGuard` (`@commons/guards/jwt-auth.guard`) wraps Passport's JWT strategy. The strategy itself is not included —
-add one per project. JWT settings come from `config.jwt`; the two secrets are lazy getters that throw only when first
-read, so the template boots without them.
 
 ---
 
