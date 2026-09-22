@@ -3,19 +3,23 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 import { config } from '@config/app.config';
 
-const isProduction = config.env === 'production';
+const {
+    env,
+    database: { host, port, username, password, name, synchronize, dropSchema },
+} = config;
+const isProduction = env === 'production';
 
 export const dataSourceOptions: DataSourceOptions = {
     type: 'postgres',
-    host: config.database.host,
-    port: config.database.port,
-    username: config.database.username,
-    password: config.database.password,
-    database: config.database.name,
+    host,
+    port,
+    username,
+    password,
+    database: name,
     entities: ['dist/**/entities/*.entity.js'],
     migrations: ['dist/**/database/migrations/*.js'],
-    synchronize: !isProduction && config.database.synchronize,
-    dropSchema: !isProduction && config.database.dropSchema,
+    synchronize: !isProduction && synchronize,
+    dropSchema: !isProduction && dropSchema,
     migrationsRun: false,
     logging: !isProduction,
     namingStrategy: new SnakeNamingStrategy(),
