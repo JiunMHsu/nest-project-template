@@ -17,7 +17,10 @@ const createVitestTestConfig = (testingType: string): ViteUserConfig => {
             alias: {
                 '@src': path.resolve(__dirname, './src'),
                 '@commons': path.resolve(__dirname, './src/commons'),
+                '@libs': path.resolve(__dirname, './src/libs'),
                 '@infrastructure': path.resolve(__dirname, './src/infrastructure'),
+                '@config': path.resolve(__dirname, './src/infrastructure/config'),
+                '@database': path.resolve(__dirname, './src/infrastructure/database'),
                 '@integrations': path.resolve(__dirname, './src/integrations'),
                 '@features': path.resolve(__dirname, './src/features'),
                 '@test': path.resolve(__dirname, './test'),
