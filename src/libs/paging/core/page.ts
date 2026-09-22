@@ -69,7 +69,7 @@ export class Page<T> extends Slice<T> {
     }
 
     public get totalPages(): number {
-        return this.page === 0 ? 1 : Math.ceil(this.totalCount / this.count);
+        return this.count === 0 ? 1 : Math.ceil(this.totalCount / this.count);
     }
 
     public override map<U>(fn: (item: T) => U): Page<U> {
