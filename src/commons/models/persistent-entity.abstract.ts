@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { CreateDateColumn, DeleteDateColumn, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 export abstract class PersistentEntity {
     @PrimaryGeneratedColumn('uuid', { name: 'id' })
@@ -10,10 +10,10 @@ export abstract class PersistentEntity {
     @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
     public updatedAt: Date;
 
-    @Column('timestamp', { name: 'deleted_at', nullable: true })
+    @DeleteDateColumn({ type: 'timestamp', name: 'deleted_at', nullable: true })
     public deletedAt: Date | null;
 
-    public isActive(): boolean {
+    public get isActive(): boolean {
         return !this.deletedAt;
     }
 }

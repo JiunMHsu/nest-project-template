@@ -1,3 +1,6 @@
+/**
+ * Date formatting utilities.
+ */
 export class DateConverter {
     /**
      * Converts a `Date` to a UTC ISO 8601 string.
@@ -12,7 +15,7 @@ export class DateConverter {
      * DateConverter.toISO(null)
      * // → undefined
      */
-    public static toLocalISO(date: Date | null | undefined): string | undefined {
+    public static toISO(date: Date | null | undefined): string | undefined {
         if (!date) return undefined;
         return date.toISOString();
     }
