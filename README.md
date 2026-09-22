@@ -125,10 +125,10 @@ migrations from `dist/`, so all CLI scripts build first.
 
 ```bash
 # Generate a migration from entity changes
-MIGRATION_NAME=migration-name pnpm run migration:gen
+pnpm run migration:gen MigrationName
 
 # Create an empty migration
-MIGRATION_NAME=migration-name pnpm run migration:create
+pnpm run migration:create MigrationName
 
 # Run pending migrations
 pnpm run migration:run
