@@ -1,9 +1,11 @@
 import request from 'supertest';
-import { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
-import { AppModule } from '@src/app.module';
 import { App } from 'supertest/types';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+
+import { INestApplication } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+
+import { AppModule } from '@src/app.module';
 
 describe('AppHealth (e2e)', () => {
     let app: INestApplication;

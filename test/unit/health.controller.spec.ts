@@ -1,5 +1,6 @@
-import { HealthController } from '@src/health/health.controller';
 import { beforeEach, describe, expect, it } from 'vitest';
+
+import { HealthController } from '@src/health/health.controller';
 
 describe('HealthController', () => {
     let controller: HealthController;

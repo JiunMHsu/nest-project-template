@@ -1,17 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { Provider } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { configuration } from '@config/app.config';
-import { EntityClassOrSchema } from '@nestjs/typeorm/dist/interfaces/entity-class-or-schema.type';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { PostgresConfigService } from '@database/postgres/postgres-config.service';
 import { DiscoveryModule } from '@nestjs/core';
 
-export async function createIntegrationTestModule(
-    entities: EntityClassOrSchema[],
-    providers: Provider[],
-): Promise<TestingModule> {
+import { configuration } from '@config/app.config';
+import { dataSourceOptions } from '@database/postgres';
+
+export async function createIntegrationTestModule(entities: any[], providers: Provider[]): Promise<TestingModule> {
     return Test.createTestingModule({
         imports: [
             await ConfigModule.forRoot({
@@ -19,11 +16,7 @@ export async function createIntegrationTestModule(
                 cache: true,
                 load: [configuration],
             }),
-            TypeOrmModule.forRootAsync({
-                imports: [ConfigModule],
-                inject: [ConfigService],
-                useClass: PostgresConfigService,
-            }),
+            TypeOrmModule.forRoot({ ...dataSourceOptions }),
             TypeOrmModule.forFeature(entities),
             EventEmitterModule.forRoot(),
             DiscoveryModule,
