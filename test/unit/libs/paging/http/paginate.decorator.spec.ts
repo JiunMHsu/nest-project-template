@@ -103,13 +103,13 @@ describe('Paginate', () => {
 
     describe('sorting with a field map', () => {
         it('should map the wire name to the entity property', () => {
-            expect(resolve('named', { sort: 'last_name,DESC' }).sort.toArray()).toEqual([
+            expect(resolve('named', { sort: 'last_name,desc' }).sort.toArray()).toEqual([
                 { property: 'lastName', direction: Direction.DESC },
             ]);
         });
 
         it('should accept repeated sort params', () => {
-            expect(resolve('named', { sort: ['last_name', 'created_at,DESC'] }).sort.toArray()).toEqual([
+            expect(resolve('named', { sort: ['last_name', 'created_at,desc'] }).sort.toArray()).toEqual([
                 { property: 'lastName', direction: Direction.ASC },
                 { property: 'createdAt', direction: Direction.DESC },
             ]);
@@ -122,7 +122,7 @@ describe('Paginate', () => {
 
     describe('sorting with a field list', () => {
         it('should sort by the listed field', () => {
-            expect(resolve('simple', { sort: 'name,DESC' }).sort.toArray()).toEqual([
+            expect(resolve('simple', { sort: 'name,desc' }).sort.toArray()).toEqual([
                 { property: 'name', direction: Direction.DESC },
             ]);
         });
